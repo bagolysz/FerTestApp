@@ -6,11 +6,10 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.RectF;
+import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -21,6 +20,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -30,7 +30,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
-import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Button;
@@ -42,11 +41,14 @@ import com.example.szabi.fertestapp.R;
 import com.example.szabi.fertestapp.model.Classification;
 import com.example.szabi.fertestapp.model.Classifier;
 import com.example.szabi.fertestapp.model.TensorFlowClassifier;
+import com.example.szabi.fertestapp.utils.ClassificationProcessingThread;
 import com.example.szabi.fertestapp.utils.ClassificationUtils;
+import com.example.szabi.fertestapp.utils.FixedSizeQueue;
 import com.example.szabi.fertestapp.utils.ImageUtils;
 import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
+import com.google.android.gms.vision.face.Landmark;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,24 +56,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.example.szabi.fertestapp.Configs.INPUT_HEIGHT;
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
+import static com.example.szabi.fertestapp.Configs.INPUT_WIDTH;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "FerTestAppMainActivity";
     private static final int REQUEST_CAMERA_PERMISSION = 200;
 
-    private static final int MINIMUM_PREVIEW_SIZE = 224;
-
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-
-    static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
+    private static final int MINIMUM_PREVIEW_SIZE = 240;
+    private static final int QUEUE_SIZE = 10;
 
     private Button btnPredict;
+    private Button btnStartPredict;
     private TextureView textureView;
     private TextView predictionLabel;
     private ImageView capturedImage;
@@ -80,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap rgbFrameBitmap;
     private Bitmap rgbRotatedBitmap;
     private Bitmap croppedBitmap;
+    private Bitmap featuresBitmap;
 
     private Matrix frameToCropTransform;
     private Matrix rotationTransform;
@@ -92,14 +90,15 @@ public class MainActivity extends AppCompatActivity {
     private ImageReader imageReader;
     private Integer sensorOrientation;
 
+    private boolean continuousPrediction = false;
     private boolean capturePreview = false;
     private boolean computing = false;
     private Handler backgroundHandler;
     private HandlerThread backgroundThread;
+    private FixedSizeQueue fixedSizeQueue;
+    private ClassificationProcessingThread classificationProcessingThread;
 
     private FaceDetector faceDetector;
-
-    private long processingTime;
 
     //int[] imageArray = new int[]{R.drawable.test0, R.drawable.test1, R.drawable.test2, R.drawable.test3};
     //int index = 0;
@@ -108,6 +107,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        checkPermissions();
 
         predictionLabel = findViewById(R.id.lblPrediction);
         capturedImage = findViewById(R.id.capturedImage);
@@ -125,12 +126,22 @@ public class MainActivity extends AppCompatActivity {
             index = (index + 1) % (imageArray.length);*/
         });
 
+        /*btnStartPredict = findViewById(R.id.btnStartPredict);
+        btnStartPredict.setOnClickListener(v -> {
+            if (!continuousPrediction) {
+                classificationProcessingThread = new ClassificationProcessingThread(this, fixedSizeQueue);
+                classificationProcessingThread.start();
+            } else {
+                classificationProcessingThread.stopMe();
+            }
+            continuousPrediction = !continuousPrediction;
+        });*/
+
     }
 
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            // start the camera from here
             openCamera(width, height);
         }
 
@@ -159,7 +170,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        //configureTransform(width, height);
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         assert manager != null;
         try {
@@ -171,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (cameraId == null) {
-                Toast.makeText(MainActivity.this, "Sorry, no front facing camera available", Toast.LENGTH_LONG).show();
+                showToast("Sorry, no front facing camera available");
                 return;
             }
 
@@ -194,7 +204,6 @@ public class MainActivity extends AppCompatActivity {
     CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
-            // when camera device is ready, create preview
             cameraDevice = camera;
             createCameraPreview();
         }
@@ -224,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
             imageReader = ImageReader.newInstance(
                     previewDimension.getWidth(),
                     previewDimension.getHeight(),
-                    ImageFormat.YUV_420_888, 3);
+                    ImageFormat.YUV_420_888, 5);
             imageReader.setOnImageAvailableListener(imageListener, backgroundHandler);
             Surface irSurface = imageReader.getSurface();
             captureRequestBuilder.addTarget(irSurface);
@@ -258,6 +267,206 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // put into croppedBitmap parameter the cropped and resized to INPUT_SIZE detected face
+    private void cropFace(Face thisFace) {
+        // starting X and face width, assuring that still inside the input image
+        float xCenter = thisFace.getPosition().x + thisFace.getWidth()/2;
+        float xHalf = (float) (thisFace.getWidth()/2.3);
+        float x1 = xCenter - xHalf;
+        float x2 = xCenter + xHalf;
+        //float x1 = thisFace.getPosition().x > 0 ? thisFace.getPosition().x : 0;
+        //float x2 = x1 + thisFace.getWidth() < rgbRotatedBitmap.getWidth() ? x1 + thisFace.getWidth() : rgbRotatedBitmap.getWidth();
+        // starting Y and face height, going up and down from center of the face
+        float yCenter = (float) (thisFace.getPosition().y + 1.3 * thisFace.getHeight() / 2);
+        float y1 = yCenter - thisFace.getWidth() / 2;
+        float y2 = yCenter + thisFace.getWidth() / 2;
+
+        // assure that bounds are inside the original image
+        y1 = y1 >= 0 ? y1 : 0;
+        y2 = y2 < rgbRotatedBitmap.getHeight() ? y2 : rgbRotatedBitmap.getHeight();
+
+        new Canvas(croppedBitmap).drawBitmap(
+                rgbRotatedBitmap,
+                new Rect((int) x1, (int) y1, (int) x2, (int) y2),
+                new Rect(0, 0, croppedBitmap.getWidth(), croppedBitmap.getHeight()),
+                null
+        );
+
+        /*Bitmap tempBitmap = Bitmap.createBitmap(rgbRotatedBitmap,
+                (int) x1,
+                (int) y1,
+                (int) (x2 - x1),
+                (int) (y2 - y1)
+        );
+
+        frameToCropTransform = ImageUtils.getScaleMatrix(
+                tempBitmap.getWidth(),
+                tempBitmap.getHeight(),
+                INPUT_WIDTH, INPUT_HEIGHT, true);
+
+        new Canvas(croppedBitmap).drawBitmap(tempBitmap, frameToCropTransform, null);*/
+    }
+
+    // put into featuresBitmap the cropped regions from the face
+    private void cropFeatures(Face thisFace) {
+        // find landmarks
+        PointF lMouth = null, rMouth = null, lEye = null, rEye = null, nose = null, lCheek = null, rCheek = null, bottom = null;
+        for (Landmark l : thisFace.getLandmarks()) {
+            switch (l.getType()) {
+                case 10:
+                    lEye = l.getPosition();
+                    break;
+                case 4:
+                    rEye = l.getPosition();
+                    break;
+                case 6:
+                    nose = l.getPosition();
+                    break;
+                case 11:
+                    lMouth = l.getPosition();
+                    break;
+                case 5:
+                    rMouth = l.getPosition();
+                    break;
+                case 7:
+                    lCheek = l.getPosition();
+                    break;
+                case 1:
+                    rCheek = l.getPosition();
+                    break;
+                case 0:
+                    bottom = l.getPosition();
+                    break;
+            }
+        }
+
+        // find eyes and mouth regions
+        float mouthCenterY = 0, eyeCenterY = 0, halfHeight = 0, halfWidth = 0;
+        if (nose != null && (lEye != null || rEye != null) && (lMouth != null || rMouth != null)) {
+            if (lEye != null && rEye != null) {
+                eyeCenterY = (lEye.y + rEye.y) / 2;
+            } else if (lEye != null) {
+                eyeCenterY = lEye.y;
+            } else {
+                eyeCenterY = rEye.y;
+            }
+            eyeCenterY *= 0.96;
+
+            if (lMouth != null && rMouth != null) {
+                mouthCenterY = (lMouth.y + rMouth.y) / 2;
+            } else if (lMouth != null) {
+                mouthCenterY = lMouth.y;
+            } else {
+                mouthCenterY = rMouth.y;
+            }
+
+            halfHeight = mouthCenterY - nose.y;
+            if (bottom != null) {
+                if (bottom.y - nose.y > 2 * halfHeight) {
+                    halfHeight = bottom.y - nose.y;
+                }
+            }
+
+            if (lCheek != null && rCheek != null) {
+                halfWidth = rCheek.x - lCheek.x;
+            } else if (lEye != null && rEye != null) {
+                halfWidth = (float) ((rEye.x - lEye.x) * 1.5);
+            } else {
+                halfWidth = (float) (rgbRotatedBitmap.getWidth() * 0.4);
+            }
+
+            if (halfWidth <= 0 || halfHeight <= 0) {
+                return;
+            }
+
+            Canvas featCanvas = new Canvas(featuresBitmap);
+            featCanvas.drawBitmap(rgbRotatedBitmap,
+                    new Rect((int) (nose.x - halfWidth), (int) (eyeCenterY - halfHeight),
+                            (int) (nose.x + halfWidth), (int) (eyeCenterY + halfHeight)),
+                    new Rect(0, 0, featuresBitmap.getWidth(), featuresBitmap.getHeight() / 2),
+                    null);
+            featCanvas.drawBitmap(rgbRotatedBitmap,
+                    new Rect((int) (nose.x - halfWidth), (int) (mouthCenterY - halfHeight),
+                            (int) (nose.x + halfWidth), (int) (mouthCenterY + halfHeight)),
+                    new Rect(0, featuresBitmap.getHeight() / 2, featuresBitmap.getWidth(), featuresBitmap.getHeight()),
+                    null);
+        }
+
+    }
+
+    // this method is called every time a new image from the camera is available
+    // the camera image is transformed into a grayScale bitmap, a face is cropped from the image, if any
+    // and the cropped bitmap is fed to the inference engine to obtain a classification
+    ImageReader.OnImageAvailableListener imageListener = reader -> {
+        //Log.d(TAG, "Image listener activated");
+        Image image;
+
+        image = reader.acquireLatestImage();
+        if (image == null) {
+            Log.d(TAG, "No image to read");
+            return;
+        }
+
+        if (computing) {
+            image.close();
+            return;
+        }
+        computing = true;
+        //Log.d(TAG, "working on image");
+
+        if (capturePreview) {
+            capturePreview = false;
+
+            // fill rgbFrameBitmap with latest acquired image in grayScale format
+            getGrayScaleBitmapFromImage(image);
+            if (faceDetector.isOperational()) {
+                Frame frame = new Frame.Builder().setBitmap(rgbRotatedBitmap).build();
+                SparseArray<Face> faces = faceDetector.detect(frame);
+
+                if (faces.size() > 0) {
+                    //interested only in the first face
+                    Face thisFace = faces.valueAt(0);
+                    cropFace(thisFace);
+                    //cropFeatures(thisFace);
+
+                    final long startTime = System.currentTimeMillis();
+                    final List<Classification> results = classifier.classify(croppedBitmap);
+                    double endTime = (System.currentTimeMillis() - startTime) / 1000.0;
+                    //fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
+
+                    StringBuilder clazz = new StringBuilder();
+                    for (Classification c : results) {
+                        clazz.append(c.toString()).append("\n");
+                    }
+                    Log.d("RECOG", clazz.toString());
+
+                    // print results
+                    runOnUiThread(() -> {
+                        capturePreview = false;
+                        capturedImage.setImageBitmap(croppedBitmap);
+                        predictionLabel.setText(ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
+                        btnPredict.setClickable(true);
+                    });
+
+                } else {
+                    runOnUiThread(() -> {
+                                showToast("No face detected");
+                                capturePreview = false;
+                                btnPredict.setClickable(true);
+                            }
+                    );
+                }
+            } else {
+                Log.e(TAG, "Face detector is not operational");
+            }
+        }
+
+        image.close();
+        computing = false;
+    };
+
+    /*
+    // image listener test method to detect the :P emoji, i.e. if tongue is visible
     ImageReader.OnImageAvailableListener imageListener = reader -> {
         //Log.d(TAG, "Image listener activated");
         Image image;
@@ -287,53 +496,84 @@ public class MainActivity extends AppCompatActivity {
                 if (faces.size() > 0) {
                     //interested only in the first face
                     Face thisFace = faces.valueAt(0);
-                    //float x1 = thisFace.getPosition().x > 0 ? thisFace.getPosition().x : 0;
-                    //float y1 = thisFace.getPosition().y > 0 ? thisFace.getPosition().y : 0;
-                    //float x2 = x1 + thisFace.getWidth() < rgbRotatedBitmap.getWidth() ? x1 + thisFace.getWidth() : rgbRotatedBitmap.getWidth();
-                    //float y2 = y1 + thisFace.getHeight() < rgbRotatedBitmap.getHeight() ? y1 + thisFace.getHeight() : rgbRotatedBitmap.getHeight();
 
-                    // starting X and face width, assuring that still inside the input image
-                    float x1 = thisFace.getPosition().x > 0 ? thisFace.getPosition().x : 0;
-                    float x2 = x1 + thisFace.getWidth() < rgbRotatedBitmap.getWidth() ? x1 + thisFace.getWidth() : rgbRotatedBitmap.getWidth();
-                    // starting Y and face height, going up and down from center of the face
-                    float yCenter = (float) (thisFace.getPosition().y + 1.25 * thisFace.getHeight() / 2);
-                    float y1 = yCenter - thisFace.getWidth() / 2;
-                    float y2 = yCenter + thisFace.getWidth() / 2;
-                    // assure that bounds are inside the original image
-                    y1 = y1 >= 0 ? y1 : 0;
-                    y2 = y2 < rgbRotatedBitmap.getHeight() ? y2 : rgbRotatedBitmap.getHeight();
+                    Paint myRectPaint = new Paint();
+                    myRectPaint.setStrokeWidth(2);
+                    myRectPaint.setColor(Color.RED);
+                    myRectPaint.setStyle(Paint.Style.STROKE);
 
-                    Bitmap tempBitmap = Bitmap.createBitmap(rgbRotatedBitmap,
-                            (int) x1,
-                            (int) y1,
-                            (int) (x2 - x1),
-                            (int) (y2 - y1)
-                    );
+                    //Bitmap tempBitmap = Bitmap.createBitmap(rgbRotatedBitmap.getWidth(), rgbRotatedBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+                    //Canvas tempCanvas = new Canvas(tempBitmap);
+                    //tempCanvas.drawBitmap(rgbRotatedBitmap, 0, 0, null);
 
-                    frameToCropTransform = ImageUtils.getScaleMatrix(
-                            tempBitmap.getWidth(),
-                            tempBitmap.getHeight(),
-                            INPUT_SIZE, INPUT_SIZE, true);
-
-                    new Canvas(croppedBitmap).drawBitmap(tempBitmap, frameToCropTransform, null);
-
-                    final long startTime = System.currentTimeMillis();
-                    final List<Classification> results = classifier.classify(croppedBitmap);
-                    double endTime = (System.currentTimeMillis() - startTime)/1000.0;
-
-                    StringBuilder clazz = new StringBuilder();
-                    for (Classification c : results) {
-                        clazz.append(c.toString()).append("\n");
+                    PointF nose = null, leftM = null, rightM = null;
+                    for (Landmark landmark : thisFace.getLandmarks()) {
+                        switch (landmark.getType()) {
+                            case 5:
+                                rightM = landmark.getPosition();
+                                break;
+                            case 6:
+                                nose = landmark.getPosition();
+                                break;
+                            case 11:
+                                leftM = landmark.getPosition();
+                                break;
+                        }
                     }
-                    Log.d("RECOG", clazz.toString());
+                    if (rightM != null && leftM != null && nose != null) {
+                        float left = leftM.x;
+                        float top = nose.y;
+                        float right = rightM.x;
+                        float bottom = leftM.y + rightM.y - nose.y;
+                        //float bottom = nose.y + 2 * ((leftM.y + rightM.y)/2 - nose.y);
+
+                        float width = right - left;
+                        float height = bottom - top;
+                        float line = width > height ? width : height;
+
+                        //tempCanvas.drawCircle(x,y,2, myRectPaint);
+                        //tempCanvas.drawRect(new RectF(left, top, left + line, top + line), myRectPaint);
+
+                        Bitmap tempBitmap = Bitmap.createBitmap(rgbRotatedBitmap,
+                                (int) left,
+                                (int) top,
+                                (int) line,
+                                (int) line
+                        );
+
+                        frameToCropTransform = ImageUtils.getScaleMatrix(
+                                tempBitmap.getWidth(),
+                                tempBitmap.getHeight(),
+                                INPUT_SIZE, INPUT_SIZE, true);
+
+                        new Canvas(croppedBitmap).drawBitmap(tempBitmap, frameToCropTransform, null);
+
+                        runOnUiThread(() -> {
+                            capturedImage.setImageBitmap(tempBitmap);
+                            capturePreview = false;
+                            btnPredict.setClickable(true);
+                        });
+
+                        String storageDirectory = Environment.getExternalStorageDirectory().toString();
+                        FileOutputStream out = null;
+                        File file = new File(storageDirectory, "ferphotos/pic" + pictureNumber++ + ".PNG");
+                        try {
+                            out = new FileOutputStream(file);
+                            tempBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        } finally {
+                            try {
+                                if (out != null) {
+                                    out.close();
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
 
 
-                    runOnUiThread(() -> {
-                        capturedImage.setImageBitmap(croppedBitmap);
-                        predictionLabel.setText(ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
-                        capturePreview = false;
-                        btnPredict.setClickable(true);
-                    });
                 } else {
                     runOnUiThread(() -> {
                                 Toast.makeText(MainActivity.this, "No face detected", Toast.LENGTH_SHORT).show();
@@ -349,67 +589,7 @@ public class MainActivity extends AppCompatActivity {
         image.close();
         computing = false;
     };
-
-    private void drawFaceRect() {
-        /*Paint myRectPaint = new Paint();
-                    myRectPaint.setStrokeWidth(5);
-                    myRectPaint.setColor(Color.RED);
-                    myRectPaint.setStyle(Paint.Style.STROKE);
-
-                    Bitmap tempBitmap = Bitmap.createBitmap(rgbRotatedBitmap.getWidth(), rgbRotatedBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-                    Canvas tempCanvas = new Canvas(tempBitmap);
-                    tempCanvas.drawBitmap(rgbRotatedBitmap, 0, 0, null);
-                    tempCanvas.drawRoundRect(new RectF(x1, y1, x2, y2), 2, 2, myRectPaint);*/
-
-        /*final long startTime = System.currentTimeMillis();
-
-        preProcessImage(image);
-
-        final List<Classification> results = classifier.classify(croppedBitmap);
-
-        processingTime = System.currentTimeMillis() - startTime;
-        StringBuilder clazz = new StringBuilder();
-        for (Classification c : results) {
-            clazz.append(c.toString());
-        }
-        Log.d("RECOG", clazz.toString() + "Finished in " + processingTime + "ms");
-
-        runOnUiThread(() -> {
-            predictionLabel.setText(ClassificationUtils.argMax(results).toString());
-            if (capturePreview) {
-                Paint myRectPaint = new Paint();
-                myRectPaint.setStrokeWidth(5);
-                myRectPaint.setColor(Color.RED);
-                myRectPaint.setStyle(Paint.Style.STROKE);
-
-                Bitmap tempBitmap = Bitmap.createBitmap(croppedBitmap.getWidth(), croppedBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-                Canvas tempCanvas = new Canvas(tempBitmap);
-                tempCanvas.drawBitmap(croppedBitmap, 0, 0, null);
-
-                if (faceDetector.isOperational()) {
-                    Frame frame = new Frame.Builder().setBitmap(croppedBitmap).build();
-                    SparseArray<Face> faces = faceDetector.detect(frame);
-
-                    for (int i = 0; i < faces.size(); i++) {
-                        Face thisFace = faces.valueAt(i);
-                        float x1 = thisFace.getPosition().x;
-                        float y1 = thisFace.getPosition().y;
-                        float x2 = x1 + thisFace.getWidth();
-                        float y2 = y1 + thisFace.getHeight();
-                        tempCanvas.drawRoundRect(new RectF(x1, y1, x2, y2), 2, 2, myRectPaint);
-                    }
-                } else {
-                    Log.e(TAG, "Could not set up face detector");
-                }
-
-                capturedImage.setImageBitmap(Bitmap.createBitmap(tempBitmap));
-                capturePreview = false;
-                btnPredict.setClickable(true);
-            }
-        });
-
-        computing = false;*/
-    }
+    */
 
     private void getGrayScaleBitmapFromImage(Image image) {
         Image.Plane Y = image.getPlanes()[0];
@@ -433,7 +613,6 @@ public class MainActivity extends AppCompatActivity {
         new Canvas(rgbRotatedBitmap).drawBitmap(rgbFrameBitmap, rotationTransform, null);
     }
 
-
     // prepare the necessary resources for face detection and prediction
     private void prepareResources() {
         try {
@@ -446,7 +625,7 @@ public class MainActivity extends AppCompatActivity {
                 .setTrackingEnabled(false)
                 .setProminentFaceOnly(true)
                 .setClassificationType(FaceDetector.NO_CLASSIFICATIONS)
-                .setLandmarkType(FaceDetector.NO_LANDMARKS)
+                .setLandmarkType(FaceDetector.ALL_LANDMARKS)
                 .setMode(FaceDetector.FAST_MODE)
                 .build();
         if (!faceDetector.isOperational()) {
@@ -454,57 +633,41 @@ public class MainActivity extends AppCompatActivity {
         }
 
         final int screenOrientation = getWindowManager().getDefaultDisplay().getRotation();
-        sensorOrientation = sensorOrientation + screenOrientation;
+        // when using emulator with laptop webcam different method applies
+        sensorOrientation = Build.MANUFACTURER.contains("Genymotion") ? 180 : sensorOrientation + screenOrientation;
 
         rgbFrameBitmap = Bitmap.createBitmap(previewDimension.getWidth(), previewDimension.getHeight(), Bitmap.Config.ARGB_8888);
         rgbRotatedBitmap = Bitmap.createBitmap(previewDimension.getWidth(), previewDimension.getHeight(), Bitmap.Config.ARGB_8888);
         croppedBitmap = Bitmap.createBitmap(INPUT_SIZE, INPUT_SIZE, Bitmap.Config.ARGB_8888);
+        featuresBitmap = Bitmap.createBitmap(INPUT_WIDTH, INPUT_HEIGHT, Bitmap.Config.ARGB_8888);
 
-        rotationTransform = ImageUtils.getRotationMatrix(rgbFrameBitmap.getWidth(), rgbFrameBitmap.getHeight(), sensorOrientation);
+        rotationTransform = ImageUtils.getRotationMatrix(
+                rgbFrameBitmap.getWidth(),
+                rgbFrameBitmap.getHeight(),
+                sensorOrientation);
+
+        fixedSizeQueue = new FixedSizeQueue(QUEUE_SIZE);
     }
 
     private static Size chooseOptimalSize(final Size[] choices) {
-        // Collect the supported resolutions that are at least as big as the preview Surface
+        // collect the supported resolutions that are at least as big as the preview Surface
         final List<Size> bigEnough = new ArrayList<>();
         for (final Size option : choices) {
             if (option.getHeight() >= MINIMUM_PREVIEW_SIZE && option.getWidth() >= MINIMUM_PREVIEW_SIZE) {
                 bigEnough.add(option);
             }
         }
-        // Pick the smallest of those, assuming we found any
+        // pick the smallest of those, assuming we found any
         return (bigEnough.size() > 0) ? Collections.min(bigEnough,
                 (l, r) -> Long.signum((long) l.getWidth() * l.getHeight() - (long) r.getWidth() * r.getHeight())
         ) : choices[0];
     }
 
-    private void configureTransform(final int viewWidth, final int viewHeight) {
-        if (textureView == null || previewDimension == null) {
-            return;
-        }
-        int rotation = MainActivity.this.getWindowManager().getDefaultDisplay().getRotation();
-        Matrix matrix = new Matrix();
-        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        RectF bufferRect = new RectF(0, 0, previewDimension.getWidth(), previewDimension.getHeight());
-        float centerX = viewRect.centerX();
-        float centerY = viewRect.centerY();
-
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-            float scale = Math.max(
-                    (float) viewHeight / previewDimension.getHeight(),
-                    (float) viewWidth / previewDimension.getWidth()
-            );
-            matrix.postScale(scale, scale, centerX, centerY);
-            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-        } else if (Surface.ROTATION_180 == rotation) {
-            matrix.postRotate(180, centerX, centerY);
-        }
-        textureView.setTransform(matrix);
+    // OPEN-CLOSE UTILS
+    private void showToast(String msg) {
+        runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
     }
 
-
-    // OPEN-CLOSE UTILS
     private void closeCamera() {
         if (cameraCaptureSession != null) {
             cameraCaptureSession.close();
@@ -534,6 +697,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void stopBackgroundThread() {
+        if (classificationProcessingThread != null) {
+            classificationProcessingThread.stopMe();
+            classificationProcessingThread = null;
+        }
+
         backgroundThread.quitSafely();
         try {
             backgroundThread.join();
@@ -544,13 +712,35 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void checkPermissions() {
+        List<String> permissionRequests = new ArrayList<>();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
+                PackageManager.PERMISSION_GRANTED) {
+            permissionRequests.add(Manifest.permission.CAMERA);
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                PackageManager.PERMISSION_GRANTED) {
+            permissionRequests.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+
+        if (!permissionRequests.isEmpty()) {
+            ActivityCompat.requestPermissions(
+                    MainActivity.this,
+                    permissionRequests.toArray(new String[permissionRequests.size()]),
+                    REQUEST_CAMERA_PERMISSION);
+        }
+    }
+
+
     // SYSTEM_CALLBACK SECTION
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
-                Toast.makeText(MainActivity.this, "Sorry, app can't be used without permission!", Toast.LENGTH_LONG).show();
-                finish();
+            for (int result : grantResults) {
+                if (result == PackageManager.PERMISSION_DENIED) {
+                    showToast("Sorry, app can't be used without permission!");
+                    finish();
+                }
             }
         }
     }
@@ -592,7 +782,7 @@ public class MainActivity extends AppCompatActivity {
 
         final List<Classification> results = classifier.classify(decodeBitmapImage(image));
 
-        processingTime = System.currentTimeMillis() - startTime;
+        long processingTime = System.currentTimeMillis() - startTime;
         StringBuilder clazz = new StringBuilder();
         for (Classification c : results) {
             clazz.append(c.toString());

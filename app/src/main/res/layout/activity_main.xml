@@ -14,20 +14,33 @@
 
         <TextureView
             android:id="@+id/previewImage"
-            android:layout_width="224dp"
-            android:layout_height="224dp" />
+            android:layout_width="240dp"
+            android:layout_height="320dp" />
 
         <ImageView
             android:id="@+id/capturedImage"
-            android:layout_width="224dp"
-            android:layout_height="224dp"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
             android:contentDescription="no image" />
 
-        <Button
-            android:id="@+id/btnTakePicture"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Freeze" />
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnTakePicture"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Freeze" />
+
+            <Button
+                android:id="@+id/btnStartPredict"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start predict" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/lblPrediction"

@@ -24,21 +24,15 @@ public class Classification {
         this.confidence = c.getConfidence();
     }
 
+
     public String getLabel() {
         return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
     }
 
     public float getConfidence() {
         return confidence;
     }
 
-    public void setConfidence(float confidence) {
-        this.confidence = confidence;
-    }
 
     @Override
     public String toString() {

@@ -11,8 +11,10 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.example.szabi.fertestapp.Configs.INPUT_HEIGHT;
 import static com.example.szabi.fertestapp.Configs.INPUT_NAME;
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
+import static com.example.szabi.fertestapp.Configs.INPUT_WIDTH;
 import static com.example.szabi.fertestapp.Configs.LABEL_PATH;
 import static com.example.szabi.fertestapp.Configs.MODEL_PATH;
 import static com.example.szabi.fertestapp.Configs.OUTPUT_NAME;
@@ -41,7 +43,7 @@ public class TensorFlowClassifier implements Classifier {
     public List<Classification> classify(final Bitmap bitmap) {
         final float[] tfOutput = new float[noOfClasses];
 
-        inferenceInterface.feed(INPUT_NAME, grayScaleBitmap(bitmap), 1, INPUT_SIZE, INPUT_SIZE, 1);
+        inferenceInterface.feed(INPUT_NAME, grayScaleBitmap(bitmap), 1, INPUT_WIDTH, INPUT_HEIGHT, 1);
         inferenceInterface.run(new String[]{OUTPUT_NAME});
         inferenceInterface.fetch(OUTPUT_NAME, tfOutput);
 
@@ -52,10 +54,9 @@ public class TensorFlowClassifier implements Classifier {
         return classifications;
     }
 
-    // todo: use a look-up table here in order to avoid the float multiplication
     private float[] grayScaleBitmap(final Bitmap bitmap) {
-        int[] intValues = new int[INPUT_SIZE * INPUT_SIZE];
-        float[] grayValues = new float[INPUT_SIZE * INPUT_SIZE];
+        int[] intValues = new int[INPUT_WIDTH * INPUT_HEIGHT];
+        float[] grayValues = new float[INPUT_WIDTH * INPUT_HEIGHT];
         int r, g, b;
 
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());

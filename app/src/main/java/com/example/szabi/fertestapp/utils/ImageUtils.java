@@ -25,7 +25,7 @@ public class ImageUtils {
 
         if (srcWidth != dstWidth && srcHeight != dstHeight) {
             final float scaleX = dstWidth / (float) srcWidth;
-            final float scaleY = dstHeight / (float) dstHeight;
+            final float scaleY = dstHeight / (float) srcHeight;
 
             matrix.postTranslate(-srcWidth / 2.0f, -srcHeight / 2.0f);
             if (maintainAspectRation) {
