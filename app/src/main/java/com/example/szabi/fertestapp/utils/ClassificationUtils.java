@@ -1,8 +1,7 @@
 package com.example.szabi.fertestapp.utils;
 
-import com.example.szabi.fertestapp.model.Classification;
+import com.example.szabi.fertestapp.model.face.Classification;
 
-import java.util.Comparator;
 import java.util.List;
 
 public class ClassificationUtils {

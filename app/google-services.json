@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "711314739574",
+    "firebase_url": "https://fermessaging.firebaseio.com",
+    "project_id": "fermessaging",
+    "storage_bucket": "fermessaging.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711314739574:android:5e106a41faeef9aa",
+        "android_client_info": {
+          "package_name": "com.example.szabi.fertestapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "711314739574-1c54uhskch1elti8mcms4san2jkp3g0o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.szabi.fertestapp",
+            "certificate_hash": "4f1e55c624d17ef787d20f6d1a93b1851fdb8bcd"
+          }
+        },
+        {
+          "client_id": "711314739574-klnd3be7l01u8gt8cbmg16srlm4q114q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9MQxQrcKa2yN2e2T13PfuYWkuq0k11J8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "711314739574-klnd3be7l01u8gt8cbmg16srlm4q114q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

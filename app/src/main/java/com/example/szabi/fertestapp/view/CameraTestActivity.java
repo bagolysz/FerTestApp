@@ -38,9 +38,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.szabi.fertestapp.R;
-import com.example.szabi.fertestapp.model.Classification;
-import com.example.szabi.fertestapp.model.Classifier;
-import com.example.szabi.fertestapp.model.TensorFlowClassifier;
+import com.example.szabi.fertestapp.model.face.Classification;
+import com.example.szabi.fertestapp.model.face.Classifier;
+import com.example.szabi.fertestapp.model.face.TensorFlowClassifier;
 import com.example.szabi.fertestapp.utils.ClassificationProcessingThread;
 import com.example.szabi.fertestapp.utils.ClassificationUtils;
 import com.example.szabi.fertestapp.utils.FixedSizeQueue;
@@ -60,11 +60,11 @@ import static com.example.szabi.fertestapp.Configs.INPUT_HEIGHT;
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
 import static com.example.szabi.fertestapp.Configs.INPUT_WIDTH;
 
-public class MainActivity extends AppCompatActivity {
+public class CameraTestActivity extends AppCompatActivity {
     private static final String TAG = "FerTestAppMainActivity";
     private static final int REQUEST_CAMERA_PERMISSION = 200;
 
-    private static final int MINIMUM_PREVIEW_SIZE = 240;
+    private static final int MINIMUM_PREVIEW_SIZE = 640;
     private static final int QUEUE_SIZE = 10;
 
     private Button btnPredict;
@@ -106,16 +106,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_camera_test);
 
         checkPermissions();
 
-        predictionLabel = findViewById(R.id.lblPrediction);
-        capturedImage = findViewById(R.id.capturedImage);
-        textureView = findViewById(R.id.previewImage);
+        predictionLabel = findViewById(R.id.lbl_prediction);
+        capturedImage = findViewById(R.id.captured_image);
+        textureView = findViewById(R.id.preview_image);
         textureView.setSurfaceTextureListener(textureListener);
 
-        btnPredict = findViewById(R.id.btnTakePicture);
+        btnPredict = findViewById(R.id.btn_take_picture);
         btnPredict.setOnClickListener(v -> {
             capturePreview = true;
             btnPredict.setClickable(false);
@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         // open the camera
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
                 PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            ActivityCompat.requestPermissions(CameraTestActivity.this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
             return;
         }
 
@@ -277,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
         //float x1 = thisFace.getPosition().x > 0 ? thisFace.getPosition().x : 0;
         //float x2 = x1 + thisFace.getWidth() < rgbRotatedBitmap.getWidth() ? x1 + thisFace.getWidth() : rgbRotatedBitmap.getWidth();
         // starting Y and face height, going up and down from center of the face
-        float yCenter = (float) (thisFace.getPosition().y + 1.3 * thisFace.getHeight() / 2);
+        float yCenter = (float) (thisFace.getPosition().y + 1.2 * thisFace.getHeight() / 2);
         float y1 = yCenter - thisFace.getWidth() / 2;
         float y2 = yCenter + thisFace.getWidth() / 2;
 
@@ -576,7 +576,7 @@ public class MainActivity extends AppCompatActivity {
 
                 } else {
                     runOnUiThread(() -> {
-                                Toast.makeText(MainActivity.this, "No face detected", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(CameraTestActivity.this, "No face detected", Toast.LENGTH_SHORT).show();
                                 capturePreview = false;
                                 btnPredict.setClickable(true);
                             }
@@ -665,7 +665,7 @@ public class MainActivity extends AppCompatActivity {
 
     // OPEN-CLOSE UTILS
     private void showToast(String msg) {
-        runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
+        runOnUiThread(() -> Toast.makeText(CameraTestActivity.this, msg, Toast.LENGTH_LONG).show());
     }
 
     private void closeCamera() {
@@ -725,7 +725,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (!permissionRequests.isEmpty()) {
             ActivityCompat.requestPermissions(
-                    MainActivity.this,
+                    CameraTestActivity.this,
                     permissionRequests.toArray(new String[permissionRequests.size()]),
                     REQUEST_CAMERA_PERMISSION);
         }

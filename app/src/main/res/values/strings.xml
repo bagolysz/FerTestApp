@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">FerTestApp</string>
+    <string name="web_client_id">711314739574-klnd3be7l01u8gt8cbmg16srlm4q114q.apps.googleusercontent.com</string>
+
+    <string name="menu_home_camera_test">Run camera test</string>
+    <string name="avatar">avatar</string>
 </resources>

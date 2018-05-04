@@ -3,7 +3,7 @@ package com.example.szabi.fertestapp.utils;
 import android.app.Activity;
 import android.util.Log;
 
-import com.example.szabi.fertestapp.model.Classification;
+import com.example.szabi.fertestapp.model.face.Classification;
 
 import java.util.HashMap;
 import java.util.List;

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/login_base_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/login_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/login"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/app_name" />
+
+    <com.google.android.gms.common.SignInButton
+        android:id="@+id/login_sign_in"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        android:layout_gravity="bottom|center"
+        android:layout_marginBottom="@android:dimen/app_icon_size"
+        android:layout_marginEnd="@dimen/padding_standard"
+        android:layout_marginStart="@dimen/padding_standard" />
+
+</android.support.design.widget.CoordinatorLayout>

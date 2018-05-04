@@ -1,6 +1,8 @@
-package com.example.szabi.fertestapp.model;
+package com.example.szabi.fertestapp.model.face;
 
 import android.graphics.Bitmap;
+
+import com.example.szabi.fertestapp.model.face.Classification;
 
 import java.util.List;
 
