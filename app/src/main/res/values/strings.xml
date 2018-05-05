@@ -4,4 +4,5 @@
 
     <string name="menu_home_camera_test">Run camera test</string>
     <string name="avatar">avatar</string>
+    <string name="menu_home_quick_prediction">Quick Prediction</string>
 </resources>

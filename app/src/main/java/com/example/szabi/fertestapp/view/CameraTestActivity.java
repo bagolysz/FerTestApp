@@ -60,15 +60,20 @@ import static com.example.szabi.fertestapp.Configs.INPUT_HEIGHT;
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
 import static com.example.szabi.fertestapp.Configs.INPUT_WIDTH;
 
-public class CameraTestActivity extends AppCompatActivity {
+public class CameraTestActivity extends AppCompatActivity implements NotificationListener {
     private static final String TAG = "FerTestAppMainActivity";
     private static final int REQUEST_CAMERA_PERMISSION = 200;
 
     private static final int MINIMUM_PREVIEW_SIZE = 640;
-    private static final int QUEUE_SIZE = 10;
+    private static final int QUEUE_SIZE = 6;
+
+    private static final int SINGLE_PREDICTION = 1;
+    private static final int CONTINUOUS_PREDICTION = 2;
+
+    private int predictionType;
 
     private Button btnPredict;
-    private Button btnStartPredict;
+    private Button btnSelectPredictionType;
     private TextureView textureView;
     private TextView predictionLabel;
     private ImageView capturedImage;
@@ -90,7 +95,6 @@ public class CameraTestActivity extends AppCompatActivity {
     private ImageReader imageReader;
     private Integer sensorOrientation;
 
-    private boolean continuousPrediction = false;
     private boolean capturePreview = false;
     private boolean computing = false;
     private Handler backgroundHandler;
@@ -109,6 +113,7 @@ public class CameraTestActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera_test);
 
         checkPermissions();
+        predictionType = SINGLE_PREDICTION;
 
         predictionLabel = findViewById(R.id.lbl_prediction);
         capturedImage = findViewById(R.id.captured_image);
@@ -126,16 +131,30 @@ public class CameraTestActivity extends AppCompatActivity {
             index = (index + 1) % (imageArray.length);*/
         });
 
-        /*btnStartPredict = findViewById(R.id.btnStartPredict);
-        btnStartPredict.setOnClickListener(v -> {
-            if (!continuousPrediction) {
-                classificationProcessingThread = new ClassificationProcessingThread(this, fixedSizeQueue);
-                classificationProcessingThread.start();
-            } else {
-                classificationProcessingThread.stopMe();
+        btnSelectPredictionType = findViewById(R.id.btn_start_predict);
+        btnSelectPredictionType.setOnClickListener(v -> {
+            switch (predictionType) {
+                case SINGLE_PREDICTION:
+                    // change to continuous
+                    predictionType = CONTINUOUS_PREDICTION;
+
+                    classificationProcessingThread = new ClassificationProcessingThread(fixedSizeQueue, this);
+                    classificationProcessingThread.start();
+
+                    btnPredict.setClickable(false);
+                    showToast("Switched to continuous mode");
+                    break;
+                case CONTINUOUS_PREDICTION:
+                    // stop threads and switch to single prediction mode
+                    predictionType = SINGLE_PREDICTION;
+
+                    classificationProcessingThread.stopMe();
+
+                    btnPredict.setClickable(true);
+                    showToast("Switched to single mode");
+                    break;
             }
-            continuousPrediction = !continuousPrediction;
-        });*/
+        });
 
     }
 
@@ -270,8 +289,8 @@ public class CameraTestActivity extends AppCompatActivity {
     // put into croppedBitmap parameter the cropped and resized to INPUT_SIZE detected face
     private void cropFace(Face thisFace) {
         // starting X and face width, assuring that still inside the input image
-        float xCenter = thisFace.getPosition().x + thisFace.getWidth()/2;
-        float xHalf = (float) (thisFace.getWidth()/2.3);
+        float xCenter = thisFace.getPosition().x + thisFace.getWidth() / 2;
+        float xHalf = (float) (thisFace.getWidth() / 2.3);
         float x1 = xCenter - xHalf;
         float x2 = xCenter + xHalf;
         //float x1 = thisFace.getPosition().x > 0 ? thisFace.getPosition().x : 0;
@@ -398,12 +417,11 @@ public class CameraTestActivity extends AppCompatActivity {
     // the camera image is transformed into a grayScale bitmap, a face is cropped from the image, if any
     // and the cropped bitmap is fed to the inference engine to obtain a classification
     ImageReader.OnImageAvailableListener imageListener = reader -> {
-        //Log.d(TAG, "Image listener activated");
         Image image;
 
         image = reader.acquireLatestImage();
         if (image == null) {
-            Log.d(TAG, "No image to read");
+            //Log.d(TAG, "No image to read");
             return;
         }
 
@@ -414,52 +432,85 @@ public class CameraTestActivity extends AppCompatActivity {
         computing = true;
         //Log.d(TAG, "working on image");
 
-        if (capturePreview) {
-            capturePreview = false;
+        switch (predictionType) {
+            case SINGLE_PREDICTION:
+                if (capturePreview) {
+                    capturePreview = false;
 
-            // fill rgbFrameBitmap with latest acquired image in grayScale format
-            getGrayScaleBitmapFromImage(image);
-            if (faceDetector.isOperational()) {
-                Frame frame = new Frame.Builder().setBitmap(rgbRotatedBitmap).build();
-                SparseArray<Face> faces = faceDetector.detect(frame);
+                    // fill rgbFrameBitmap with latest acquired image in grayScale format
+                    getGrayScaleBitmapFromImage(image);
+                    if (faceDetector.isOperational()) {
+                        Frame frame = new Frame.Builder().setBitmap(rgbRotatedBitmap).build();
+                        SparseArray<Face> faces = faceDetector.detect(frame);
 
-                if (faces.size() > 0) {
-                    //interested only in the first face
-                    Face thisFace = faces.valueAt(0);
-                    cropFace(thisFace);
-                    //cropFeatures(thisFace);
+                        if (faces.size() > 0) {
+                            //interested only in the first face
+                            Face thisFace = faces.valueAt(0);
+                            cropFace(thisFace);
+                            //cropFeatures(thisFace);
 
-                    final long startTime = System.currentTimeMillis();
-                    final List<Classification> results = classifier.classify(croppedBitmap);
-                    double endTime = (System.currentTimeMillis() - startTime) / 1000.0;
-                    //fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
+                            final long startTime = System.currentTimeMillis();
+                            final List<Classification> results = classifier.classify(croppedBitmap);
+                            double endTime = (System.currentTimeMillis() - startTime) / 1000.0;
+                            //fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
 
-                    StringBuilder clazz = new StringBuilder();
-                    for (Classification c : results) {
-                        clazz.append(c.toString()).append("\n");
-                    }
-                    Log.d("RECOG", clazz.toString());
-
-                    // print results
-                    runOnUiThread(() -> {
-                        capturePreview = false;
-                        capturedImage.setImageBitmap(croppedBitmap);
-                        predictionLabel.setText(ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
-                        btnPredict.setClickable(true);
-                    });
-
-                } else {
-                    runOnUiThread(() -> {
-                                showToast("No face detected");
-                                capturePreview = false;
-                                btnPredict.setClickable(true);
+                            StringBuilder clazz = new StringBuilder();
+                            for (Classification c : results) {
+                                clazz.append(c.toString()).append("\n");
                             }
-                    );
+                            Log.d("RECOG", clazz.toString());
+
+                            // print results
+                            runOnUiThread(() -> {
+                                capturePreview = false;
+                                capturedImage.setImageBitmap(croppedBitmap);
+                                predictionLabel.setText(ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
+                                btnPredict.setClickable(true);
+                            });
+
+                        } else {
+                            runOnUiThread(() -> {
+                                        showToast("No face detected");
+                                        capturePreview = false;
+                                        btnPredict.setClickable(true);
+                                    }
+                            );
+                        }
+                    } else {
+                        Log.e(TAG, "Face detector is not operational");
+                    }
                 }
-            } else {
-                Log.e(TAG, "Face detector is not operational");
-            }
+
+                break;
+
+            case CONTINUOUS_PREDICTION:
+                // fill rgbRotatedBitmap with latest acquired image in grayScale format
+                getGrayScaleBitmapFromImage(image);
+                if (faceDetector.isOperational()) {
+                    Frame frame = new Frame.Builder().setBitmap(rgbRotatedBitmap).build();
+                    SparseArray<Face> faces = faceDetector.detect(frame);
+
+                    if (faces.size() > 0) {
+                        //interested only in the first face
+                        Face thisFace = faces.valueAt(0);
+                        cropFace(thisFace);
+                        //cropFeatures(thisFace);
+
+                        final long startTime = System.currentTimeMillis();
+                        final List<Classification> results = classifier.classify(croppedBitmap);
+                        double endTime = (System.currentTimeMillis() - startTime) / 1000.0;
+                        fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
+
+                    } else {
+                        //Log.d(TAG, "No face detected");
+                    }
+                } else {
+                    Log.e(TAG, "Face detector is not operational");
+                }
+
+                break;
         }
+
 
         image.close();
         computing = false;
@@ -788,5 +839,10 @@ public class CameraTestActivity extends AppCompatActivity {
             clazz.append(c.toString());
         }
         Log.d("RECOG", clazz.toString() + "Finished in " + processingTime + "ms");
+    }
+
+    @Override
+    public void notify(String msg) {
+        runOnUiThread(() -> predictionLabel.setText(msg));
     }
 }

@@ -1,9 +1,7 @@
 package com.example.szabi.fertestapp.utils;
 
-import android.app.Activity;
-import android.util.Log;
-
 import com.example.szabi.fertestapp.model.face.Classification;
+import com.example.szabi.fertestapp.view.NotificationListener;
 
 import java.util.HashMap;
 import java.util.List;
@@ -13,11 +11,13 @@ public class ClassificationProcessingThread extends Thread {
 
     private boolean runMe;
     private FixedSizeQueue queue;
-    private Activity activity;
+    private int queueSize;
+    private NotificationListener listener;
 
-    public ClassificationProcessingThread(Activity activity, FixedSizeQueue queue) {
-        this.activity = activity;
+    public ClassificationProcessingThread(FixedSizeQueue queue, NotificationListener listener) {
         this.queue = queue;
+        this.queueSize = queue.getQueueSize();
+        this.listener = listener;
         runMe = true;
     }
 
@@ -42,7 +42,10 @@ public class ClassificationProcessingThread extends Thread {
                 }
             }
 
-            Log.d("PRED", "Max label: " + maxLabel + " with " + maxValue);
+            maxValue /= queueSize;
+
+            listener.notify("Max label: " + maxLabel + " with " + maxValue);
+            //Log.d("PRED", "Max label: " + maxLabel + " with " + maxValue);
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

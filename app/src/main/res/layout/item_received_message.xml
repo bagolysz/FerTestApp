@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:paddingBottom="@dimen/padding_4dp"
     android:paddingTop="@dimen/padding_half">
 
     <ImageView
@@ -11,7 +12,7 @@
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:layout_marginStart="@dimen/padding_half"
-        android:background="@drawable/circle"
+        android:background="@drawable/ic_account_circle_24dp"
         android:contentDescription="@string/avatar"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

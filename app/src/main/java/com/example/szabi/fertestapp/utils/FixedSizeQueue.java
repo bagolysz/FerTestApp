@@ -23,7 +23,11 @@ public class FixedSizeQueue {
     }
 
     public synchronized List<Classification> getElements() {
-        return list;
+        return (List<Classification>) list.clone();
+    }
+
+    public int getQueueSize() {
+        return queueSize;
     }
 
 }

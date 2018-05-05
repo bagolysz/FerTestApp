@@ -5,4 +5,5 @@
     <dimen name="text_small">12sp</dimen>
     <dimen name="text_smaller">10sp</dimen>
     <dimen name="max_message_width">240dp</dimen>
+    <dimen name="padding_4dp">4dp</dimen>
 </resources>

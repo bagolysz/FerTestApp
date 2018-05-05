@@ -47,6 +47,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         // profile. ID and basic profile are included in DEFAULT_SIGN_IN.
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.web_client_id))
+                .requestProfile()
                 .requestEmail()
                 .build();
 

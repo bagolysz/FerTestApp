@@ -3,14 +3,18 @@ package com.example.szabi.fertestapp.view;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.ViewUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.szabi.fertestapp.R;
 import com.example.szabi.fertestapp.model.messages.Message;
+import com.example.szabi.fertestapp.utils.DisplayUtils;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.List;
@@ -82,8 +86,11 @@ public class MessageListAdapter extends RecyclerView.Adapter {
         TextView message, time, name;
         ImageView avatar;
 
+        private View itemView;
+
         ReceivedMessageViewHolder(View itemView) {
             super(itemView);
+            this.itemView = itemView;
             message = itemView.findViewById(R.id.text_received_message);
             time = itemView.findViewById(R.id.text_received_time);
             name = itemView.findViewById(R.id.text_received_name);
@@ -93,8 +100,12 @@ public class MessageListAdapter extends RecyclerView.Adapter {
         void bind(Message messageItem) {
             message.setText(messageItem.getText());
             name.setText(messageItem.getName());
+            time.setText(DisplayUtils.convertToTimeString(messageItem.getCreationTime()));
 
-            //todo: insert time and profile pic
+            Glide.with(itemView.getContext())
+                    .load(messageItem.getPhotoUrl())
+                    .apply(RequestOptions.circleCropTransform())
+                    .into(avatar);
         }
     }
 
@@ -109,7 +120,7 @@ public class MessageListAdapter extends RecyclerView.Adapter {
 
         void bind(Message messageItem) {
             message.setText(messageItem.getText());
-            //todo: insert time
+            time.setText(DisplayUtils.convertToTimeString(messageItem.getCreationTime()));
         }
     }
 

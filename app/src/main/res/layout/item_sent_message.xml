@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="@dimen/padding_half">
+    android:padding="@dimen/padding_4dp">
 
     <TextView
         android:id="@+id/text_sent_message"
