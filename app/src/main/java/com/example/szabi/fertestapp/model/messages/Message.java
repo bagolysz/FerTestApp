@@ -1,7 +1,5 @@
 package com.example.szabi.fertestapp.model.messages;
 
-import android.net.Uri;
-
 import com.google.firebase.database.IgnoreExtraProperties;
 
 @IgnoreExtraProperties

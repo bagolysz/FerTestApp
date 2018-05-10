@@ -42,6 +42,7 @@ public class HomeActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private EditText senderText;
     private ImageView sendButton;
+    private ImageView quickPredictionButton;
     private ProgressBar progressBar;
     private boolean dataLoaded;
 
@@ -71,6 +72,8 @@ public class HomeActivity extends AppCompatActivity {
         senderText = findViewById(R.id.chat_box_edit_text);
         sendButton = findViewById(R.id.chat_box_send_button);
         sendButton.setOnClickListener(sendButtonClickListener);
+        quickPredictionButton = findViewById(R.id.chat_box_quick_predict);
+        quickPredictionButton.setOnClickListener(v -> cameraPredictionService.predictOne());
 
         messageList = new LinkedList<>();
 
@@ -135,7 +138,6 @@ public class HomeActivity extends AppCompatActivity {
         }
     };
 
-
     private void checkPermissions() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
                 PackageManager.PERMISSION_GRANTED) {
@@ -187,8 +189,8 @@ public class HomeActivity extends AppCompatActivity {
                 startActivity(new Intent(HomeActivity.this, CameraTestActivity.class));
                 break;
 
-            case R.id.menu_home_quick_prediction:
-                cameraPredictionService.predictOne();
+            case R.id.menu_home_feedback:
+                startActivity(new Intent(HomeActivity.this, FeedbackActivity.class));
                 break;
         }
         return super.onOptionsItemSelected(item);

@@ -5,4 +5,17 @@
     <string name="menu_home_camera_test">Run camera test</string>
     <string name="avatar">avatar</string>
     <string name="menu_home_quick_prediction">Quick Prediction</string>
+    <string name="menu_home_feedback">Give a feedback</string>
+    <string name="chat_box_hint">Enter message</string>
+    <string name="feedback_take_picture">Take picture</string>
+    
+    <string-array name="emotion_labels">
+        <item>Fear</item>
+        <item>Angry</item>
+        <item>Disgust</item>
+        <item>Happy</item>
+        <item>Neutral</item>
+        <item>Sad</item>
+        <item>Surprised</item>
+    </string-array>
 </resources>

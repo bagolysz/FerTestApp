@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/menu_home_quick_prediction"
-        android:icon="@drawable/ic_sentiment_very_satisfied_white_24dp"
-        android:title="@string/menu_home_quick_prediction"
-        app:showAsAction="always" />
 
     <item
         android:id="@+id/menu_home_camera_test"
         android:title="@string/menu_home_camera_test" />
+
+    <item
+        android:id="@+id/menu_home_feedback"
+        android:title="@string/menu_home_feedback" />
 </menu>
