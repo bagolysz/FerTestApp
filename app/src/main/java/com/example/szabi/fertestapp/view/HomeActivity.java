@@ -19,8 +19,13 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.example.szabi.fertestapp.R;
+import com.example.szabi.fertestapp.model.face.LabelsType;
 import com.example.szabi.fertestapp.model.messages.Message;
 import com.example.szabi.fertestapp.service.CameraPredictionService;
+import com.example.szabi.fertestapp.utils.PreferencesManager;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -54,6 +59,7 @@ public class HomeActivity extends AppCompatActivity {
     private FirebaseUser firebaseUser;
 
     private CameraPredictionService cameraPredictionService;
+    private GoogleApiClient googleApiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,6 +144,10 @@ public class HomeActivity extends AppCompatActivity {
         }
     };
 
+    public void onPredictionComplete(LabelsType labelsType) {
+        runOnUiThread(() -> senderText.setText(EmojiMapper.getInstance().getEmojiCode(labelsType)));
+    }
+
     private void checkPermissions() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
                 PackageManager.PERMISSION_GRANTED) {
@@ -150,6 +160,20 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     // SYSTEM_CALLBACK SECTION
+    @Override
+    protected void onStart() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.web_client_id))
+                .requestProfile()
+                .requestEmail()
+                .build();
+        googleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
+                .build();
+        googleApiClient.connect();
+        super.onStart();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -192,13 +216,20 @@ public class HomeActivity extends AppCompatActivity {
             case R.id.menu_home_feedback:
                 startActivity(new Intent(HomeActivity.this, FeedbackActivity.class));
                 break;
+
+            case R.id.menu_home_sign_out:
+                Auth.GoogleSignInApi.signOut(googleApiClient).setResultCallback(status -> {
+
+                });
+                PreferencesManager.getInstance().putUser(null);
+                finish();
+
         }
         return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         moveTaskToBack(true);
     }
 
@@ -208,6 +239,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     public void showToast(String msg) {
-        Toast.makeText(HomeActivity.this, msg, Toast.LENGTH_SHORT).show();
+        runOnUiThread(() -> Toast.makeText(HomeActivity.this, msg, Toast.LENGTH_SHORT).show());
     }
+
 }
