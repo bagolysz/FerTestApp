@@ -24,7 +24,6 @@ public class Classification {
         this.confidence = c.getConfidence();
     }
 
-
     public String getLabel() {
         return label;
     }

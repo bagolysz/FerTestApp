@@ -223,18 +223,11 @@ public class CameraPredictionService {
                     final long startTime = System.currentTimeMillis();
                     final List<Classification> results = classifier.classify(croppedBitmap);
                     double endTime = (System.currentTimeMillis() - startTime) / 1000.0;
-                    //fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
-
-                    StringBuilder clazz = new StringBuilder();
-                    for (Classification c : results) {
-                        clazz.append(c.toString()).append("\n");
-                    }
-                    Log.d("RECOG", clazz.toString());
-
 
                     capturePreview = false;
-                    activity.showToast(ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
-
+                    Classification max = ClassificationUtils.argMax(results);
+                    activity.showToast(max.toString() + " in " + endTime + " s");
+                    activity.onPredictionComplete(ClassificationUtils.toLabel(max));
                 } else {
                     activity.showToast("No face detected.");
                     capturePreview = false;
@@ -250,7 +243,7 @@ public class CameraPredictionService {
     // END SECTION MANAGE HARDWARE CAMERA
 
 
-    // SECTION PREPROCESS IMAGE
+    // SECTION PRE PROCESS IMAGE
     // put into croppedBitmap parameter the cropped and resized to INPUT_SIZE detected face
     private void cropFace(Face thisFace) {
         // starting X and face width, assuring that still inside the input image

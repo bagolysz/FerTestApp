@@ -8,7 +8,8 @@
     <string name="menu_home_feedback">Give a feedback</string>
     <string name="chat_box_hint">Enter message</string>
     <string name="feedback_take_picture">Take picture</string>
-    
+    <string name="menu_home_sign_out">Sign out</string>
+
     <string-array name="emotion_labels">
         <item>Fear</item>
         <item>Angry</item>

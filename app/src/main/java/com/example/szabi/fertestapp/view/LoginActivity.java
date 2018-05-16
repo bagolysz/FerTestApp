@@ -92,8 +92,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
             if (account != null) {
                 User user = new User(account.getDisplayName(), account.getEmail());
-                PreferencesManager.getInstance().putUser(user);
-
+                PreferencesManager.getInstance(this).putUser(user);
                 fireBaseAuthWithGoogle(account);
             }
         } else {
@@ -128,6 +127,5 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
     private void openHomeScreen() {
         startActivity(new Intent(this, HomeActivity.class));
-        finish();
     }
 }
