@@ -63,10 +63,8 @@ import static com.example.szabi.fertestapp.Configs.INPUT_WIDTH;
 public class CameraTestActivity extends AppCompatActivity implements NotificationListener {
     private static final String TAG = "FerTestAppMainActivity";
     private static final int REQUEST_CAMERA_PERMISSION = 200;
-
     private static final int MINIMUM_PREVIEW_SIZE = 640;
     private static final int QUEUE_SIZE = 6;
-
     private static final int SINGLE_PREDICTION = 1;
     private static final int CONTINUOUS_PREDICTION = 2;
 
@@ -104,15 +102,12 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
 
     private FaceDetector faceDetector;
 
-    //int[] imageArray = new int[]{R.drawable.test0, R.drawable.test1, R.drawable.test2, R.drawable.test3};
-    //int index = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera_test);
 
-        checkPermissions();
         predictionType = SINGLE_PREDICTION;
 
         predictionLabel = findViewById(R.id.lbl_prediction);
@@ -147,9 +142,7 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                 case CONTINUOUS_PREDICTION:
                     // stop threads and switch to single prediction mode
                     predictionType = SINGLE_PREDICTION;
-
                     classificationProcessingThread.stopMe();
-
                     btnPredict.setClickable(true);
                     showToast("Switched to single mode");
                     break;
@@ -185,7 +178,7 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
         // open the camera
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
                 PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(CameraTestActivity.this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            //ActivityCompat.requestPermissions(CameraTestActivity.this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
             return;
         }
 
@@ -252,7 +245,7 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
             imageReader = ImageReader.newInstance(
                     previewDimension.getWidth(),
                     previewDimension.getHeight(),
-                    ImageFormat.YUV_420_888, 5);
+                    ImageFormat.YUV_420_888, 2);
             imageReader.setOnImageAvailableListener(imageListener, backgroundHandler);
             Surface irSurface = imageReader.getSurface();
             captureRequestBuilder.addTarget(irSurface);
@@ -310,20 +303,6 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                 new Rect(0, 0, croppedBitmap.getWidth(), croppedBitmap.getHeight()),
                 null
         );
-
-        /*Bitmap tempBitmap = Bitmap.createBitmap(rgbRotatedBitmap,
-                (int) x1,
-                (int) y1,
-                (int) (x2 - x1),
-                (int) (y2 - y1)
-        );
-
-        frameToCropTransform = ImageUtils.getScaleMatrix(
-                tempBitmap.getWidth(),
-                tempBitmap.getHeight(),
-                INPUT_WIDTH, INPUT_HEIGHT, true);
-
-        new Canvas(croppedBitmap).drawBitmap(tempBitmap, frameToCropTransform, null);*/
     }
 
     // put into featuresBitmap the cropped regions from the face
@@ -446,13 +425,13 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                         if (faces.size() > 0) {
                             //interested only in the first face
                             Face thisFace = faces.valueAt(0);
+
                             cropFace(thisFace);
                             //cropFeatures(thisFace);
 
                             final long startTime = System.currentTimeMillis();
                             final List<Classification> results = classifier.classify(croppedBitmap);
                             double endTime = (System.currentTimeMillis() - startTime) / 1000.0;
-                            //fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
 
                             StringBuilder clazz = new StringBuilder();
                             for (Classification c : results) {
@@ -462,7 +441,6 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
 
                             // print results
                             runOnUiThread(() -> {
-                                capturePreview = false;
                                 capturedImage.setImageBitmap(croppedBitmap);
                                 predictionLabel.setText(ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
                                 btnPredict.setClickable(true);
@@ -471,7 +449,6 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                         } else {
                             runOnUiThread(() -> {
                                         showToast("No face detected");
-                                        capturePreview = false;
                                         btnPredict.setClickable(true);
                                     }
                             );
@@ -500,9 +477,8 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                         final List<Classification> results = classifier.classify(croppedBitmap);
                         double endTime = (System.currentTimeMillis() - startTime) / 1000.0;
                         fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
-
                     } else {
-                        //Log.d(TAG, "No face detected");
+                        Log.d(TAG, "No face detected");
                     }
                 } else {
                     Log.e(TAG, "Face detector is not operational");
@@ -511,136 +487,10 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                 break;
         }
 
-
         image.close();
         computing = false;
     };
 
-    /*
-    // image listener test method to detect the :P emoji, i.e. if tongue is visible
-    ImageReader.OnImageAvailableListener imageListener = reader -> {
-        //Log.d(TAG, "Image listener activated");
-        Image image;
-
-        image = reader.acquireLatestImage();
-        if (image == null) {
-            Log.d(TAG, "No image to read");
-            return;
-        }
-
-        if (computing) {
-            image.close();
-            return;
-        }
-        computing = true;
-
-        if (capturePreview) {
-            Log.d(TAG, "working on image");
-            // fill rgbFrameBitmap with latest acquired image in grayScale format
-            getGrayScaleBitmapFromImage(image);
-            //image.close();
-
-            if (faceDetector.isOperational()) {
-                Frame frame = new Frame.Builder().setBitmap(rgbRotatedBitmap).build();
-                SparseArray<Face> faces = faceDetector.detect(frame);
-
-                if (faces.size() > 0) {
-                    //interested only in the first face
-                    Face thisFace = faces.valueAt(0);
-
-                    Paint myRectPaint = new Paint();
-                    myRectPaint.setStrokeWidth(2);
-                    myRectPaint.setColor(Color.RED);
-                    myRectPaint.setStyle(Paint.Style.STROKE);
-
-                    //Bitmap tempBitmap = Bitmap.createBitmap(rgbRotatedBitmap.getWidth(), rgbRotatedBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-                    //Canvas tempCanvas = new Canvas(tempBitmap);
-                    //tempCanvas.drawBitmap(rgbRotatedBitmap, 0, 0, null);
-
-                    PointF nose = null, leftM = null, rightM = null;
-                    for (Landmark landmark : thisFace.getLandmarks()) {
-                        switch (landmark.getType()) {
-                            case 5:
-                                rightM = landmark.getPosition();
-                                break;
-                            case 6:
-                                nose = landmark.getPosition();
-                                break;
-                            case 11:
-                                leftM = landmark.getPosition();
-                                break;
-                        }
-                    }
-                    if (rightM != null && leftM != null && nose != null) {
-                        float left = leftM.x;
-                        float top = nose.y;
-                        float right = rightM.x;
-                        float bottom = leftM.y + rightM.y - nose.y;
-                        //float bottom = nose.y + 2 * ((leftM.y + rightM.y)/2 - nose.y);
-
-                        float width = right - left;
-                        float height = bottom - top;
-                        float line = width > height ? width : height;
-
-                        //tempCanvas.drawCircle(x,y,2, myRectPaint);
-                        //tempCanvas.drawRect(new RectF(left, top, left + line, top + line), myRectPaint);
-
-                        Bitmap tempBitmap = Bitmap.createBitmap(rgbRotatedBitmap,
-                                (int) left,
-                                (int) top,
-                                (int) line,
-                                (int) line
-                        );
-
-                        frameToCropTransform = ImageUtils.getScaleMatrix(
-                                tempBitmap.getWidth(),
-                                tempBitmap.getHeight(),
-                                INPUT_SIZE, INPUT_SIZE, true);
-
-                        new Canvas(croppedBitmap).drawBitmap(tempBitmap, frameToCropTransform, null);
-
-                        runOnUiThread(() -> {
-                            capturedImage.setImageBitmap(tempBitmap);
-                            capturePreview = false;
-                            btnPredict.setClickable(true);
-                        });
-
-                        String storageDirectory = Environment.getExternalStorageDirectory().toString();
-                        FileOutputStream out = null;
-                        File file = new File(storageDirectory, "ferphotos/pic" + pictureNumber++ + ".PNG");
-                        try {
-                            out = new FileOutputStream(file);
-                            tempBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                        } finally {
-                            try {
-                                if (out != null) {
-                                    out.close();
-                                }
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-
-
-                } else {
-                    runOnUiThread(() -> {
-                                Toast.makeText(CameraTestActivity.this, "No face detected", Toast.LENGTH_SHORT).show();
-                                capturePreview = false;
-                                btnPredict.setClickable(true);
-                            }
-                    );
-                }
-            } else {
-                Log.e(TAG, "Face detector is not operational");
-            }
-        }
-        image.close();
-        computing = false;
-    };
-    */
 
     private void getGrayScaleBitmapFromImage(Image image) {
         Image.Plane Y = image.getPlanes()[0];
@@ -675,7 +525,7 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
         faceDetector = new FaceDetector.Builder(getApplicationContext())
                 .setTrackingEnabled(false)
                 .setProminentFaceOnly(true)
-                .setClassificationType(FaceDetector.NO_CLASSIFICATIONS)
+                .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
                 .setLandmarkType(FaceDetector.ALL_LANDMARKS)
                 .setMode(FaceDetector.FAST_MODE)
                 .build();
@@ -763,39 +613,6 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
         }
     }
 
-    private void checkPermissions() {
-        List<String> permissionRequests = new ArrayList<>();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
-                PackageManager.PERMISSION_GRANTED) {
-            permissionRequests.add(Manifest.permission.CAMERA);
-        }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_GRANTED) {
-            permissionRequests.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        }
-
-        if (!permissionRequests.isEmpty()) {
-            ActivityCompat.requestPermissions(
-                    CameraTestActivity.this,
-                    permissionRequests.toArray(new String[permissionRequests.size()]),
-                    REQUEST_CAMERA_PERMISSION);
-        }
-    }
-
-
-    // SYSTEM_CALLBACK SECTION
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            for (int result : grantResults) {
-                if (result == PackageManager.PERMISSION_DENIED) {
-                    showToast("Sorry, app can't be used without permission!");
-                    finish();
-                }
-            }
-        }
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -816,7 +633,13 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
         super.onPause();
     }
 
+    @Override
+    public void notifyPredictionReady(String msg) {
+        runOnUiThread(() -> predictionLabel.setText(msg));
+    }
 
+
+    // SECTION UNUSED
     // methods used for testing purpose on hard-coded images loaded from drawables
     private Bitmap decodeBitmapImage(int image) {
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
@@ -841,8 +664,4 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
         Log.d("RECOG", clazz.toString() + "Finished in " + processingTime + "ms");
     }
 
-    @Override
-    public void notify(String msg) {
-        runOnUiThread(() -> predictionLabel.setText(msg));
-    }
 }

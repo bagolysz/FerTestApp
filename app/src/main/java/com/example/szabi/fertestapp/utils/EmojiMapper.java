@@ -1,4 +1,4 @@
-package com.example.szabi.fertestapp.view;
+package com.example.szabi.fertestapp.utils;
 
 import com.example.szabi.fertestapp.model.face.LabelsType;
 

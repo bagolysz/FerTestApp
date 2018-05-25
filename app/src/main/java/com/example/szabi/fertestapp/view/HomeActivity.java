@@ -1,11 +1,7 @@
 package com.example.szabi.fertestapp.view;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -22,6 +18,7 @@ import com.example.szabi.fertestapp.R;
 import com.example.szabi.fertestapp.model.face.LabelsType;
 import com.example.szabi.fertestapp.model.messages.Message;
 import com.example.szabi.fertestapp.service.CameraPredictionService;
+import com.example.szabi.fertestapp.utils.EmojiMapper;
 import com.example.szabi.fertestapp.utils.PreferencesManager;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -41,18 +38,14 @@ import java.util.Objects;
 public class HomeActivity extends AppCompatActivity {
 
     private static final String TAG = "HomeActivity";
-    private static final int REQUEST_CAMERA_PERMISSION = 20;
     private static final String MESSAGES = "messages";
 
     private RecyclerView recyclerView;
     private EditText senderText;
-    private ImageView sendButton;
-    private ImageView quickPredictionButton;
     private ProgressBar progressBar;
     private boolean dataLoaded;
 
     private MessageListAdapter messageListAdapter;
-    private LinearLayoutManager layoutManager;
     private List<Message> messageList;
 
     private DatabaseReference databaseReference;
@@ -66,7 +59,6 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        checkPermissions();
         cameraPredictionService = new CameraPredictionService(this);
 
         dataLoaded = false;
@@ -76,19 +68,19 @@ public class HomeActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progress_bar);
         recyclerView = findViewById(R.id.message_list_layout);
         senderText = findViewById(R.id.chat_box_edit_text);
-        sendButton = findViewById(R.id.chat_box_send_button);
+        ImageView sendButton = findViewById(R.id.chat_box_send_button);
         sendButton.setOnClickListener(sendButtonClickListener);
-        quickPredictionButton = findViewById(R.id.chat_box_quick_predict);
+        ImageView quickPredictionButton = findViewById(R.id.chat_box_quick_predict);
         quickPredictionButton.setOnClickListener(v -> cameraPredictionService.predictOne());
 
         messageList = new LinkedList<>();
 
         messageListAdapter = new MessageListAdapter(this, messageList, firebaseUser);
         recyclerView.setAdapter(messageListAdapter);
-        layoutManager = new LinearLayoutManager(this);
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
-
 
         ChildEventListener childEventListener = new ChildEventListener() {
             @Override
@@ -98,7 +90,6 @@ public class HomeActivity extends AppCompatActivity {
                     progressBar.setVisibility(View.INVISIBLE);
                 }
 
-                Log.d(TAG, dataSnapshot.toString());
                 Message message = dataSnapshot.getValue(Message.class);
                 messageList.add(message);
                 updateRecyclerViewElements();
@@ -148,17 +139,6 @@ public class HomeActivity extends AppCompatActivity {
         runOnUiThread(() -> senderText.setText(EmojiMapper.getInstance().getEmojiCode(labelsType)));
     }
 
-    private void checkPermissions() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
-                PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                    HomeActivity.this,
-                    new String[]{Manifest.permission.CAMERA},
-                    REQUEST_CAMERA_PERMISSION);
-        }
-
-    }
-
     // SYSTEM_CALLBACK SECTION
     @Override
     protected void onStart() {
@@ -183,21 +163,9 @@ public class HomeActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        cameraPredictionService.stopBackgroundThread();
         cameraPredictionService.closeCamera();
+        cameraPredictionService.stopBackgroundThread();
         super.onPause();
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            for (int result : grantResults) {
-                if (result == PackageManager.PERMISSION_DENIED) {
-                    showToast("Sorry, app can't be used without permission!");
-                    finish();
-                }
-            }
-        }
     }
 
     @Override

@@ -58,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
@@ -65,10 +66,7 @@ import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
 public class FeedbackActivity extends AppCompatActivity {
 
     private static final String TESTS = "tests";
-
     private static final String TAG = "FeedbackActivity";
-    private static final int REQUEST_CAMERA_PERMISSION = 200;
-
     private static final int MINIMUM_PREVIEW_SIZE = 640;
 
     private FloatingActionButton btnPredict;
@@ -103,7 +101,7 @@ public class FeedbackActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feedback);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
 
         labelsMap = new HashMap<>();
         labelsMap.put(LabelsType.FEAR, 0);
@@ -141,9 +139,8 @@ public class FeedbackActivity extends AppCompatActivity {
                         }
                     }
                 })
-                .setPositiveButton("Confirm", (dialog, which) -> {
-                    databaseReference.push().setValue(new Feedback(predictedLabel, actualLabel));
-                })
+                .setPositiveButton("Confirm", (dialog, which) ->
+                        databaseReference.push().setValue(new Feedback(predictedLabel, actualLabel)))
                 .setNegativeButton("Cancel", (dialog, which) -> {
                 });
 
@@ -178,7 +175,7 @@ public class FeedbackActivity extends AppCompatActivity {
         // open the camera
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
                 PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(FeedbackActivity.this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            //ActivityCompat.requestPermissions(FeedbackActivity.this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
             return;
         }
 
@@ -479,18 +476,6 @@ public class FeedbackActivity extends AppCompatActivity {
         }
     }
 
-    // SYSTEM_CALLBACK SECTION
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            for (int result : grantResults) {
-                if (result == PackageManager.PERMISSION_DENIED) {
-                    showToast("Sorry, app can't be used without permission!");
-                    finish();
-                }
-            }
-        }
-    }
 
     @Override
     protected void onResume() {

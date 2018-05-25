@@ -270,7 +270,7 @@ public class CameraPredictionService {
         );
     }
 
-    // put into rgbRotatedBitmap the grayscale captured image
+    // put into rgbRotatedBitmap the grayScale captured image
     private void getGrayScaleBitmapFromImage(Image image) {
         Image.Plane Y = image.getPlanes()[0];
         // no need for U and V when creating grayScale
