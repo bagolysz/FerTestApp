@@ -32,15 +32,6 @@ public class TensorFlowClassifier implements Classifier {
         noOfClasses = labels.size();
     }
 
-/*    @Override
-    public TensorFlowClassifier create(AssetManager assetManager) throws IOException {
-        TensorFlowClassifier classifier = new TensorFlowClassifier();
-        classifier.labels = readLabels(assetManager, LABEL_PATH);
-        classifier.inferenceInterface = new TensorFlowInferenceInterface(assetManager, "file:///android_asset/" + MODEL_PATH);
-        classifier.noOfClasses = classifier.labels.size();
-        return classifier;
-    }*/
-
     @Override
     public List<Classification> classify(final Bitmap bitmap) {
         final float[] tfOutput = new float[noOfClasses];
