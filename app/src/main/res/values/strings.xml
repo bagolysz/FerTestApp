@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FerTestApp</string>
+    <string name="app_name">Emoji Chat</string>
     <string name="web_client_id">711314739574-klnd3be7l01u8gt8cbmg16srlm4q114q.apps.googleusercontent.com</string>
 
     <string name="menu_home_camera_test">Run camera test</string>
@@ -9,6 +9,9 @@
     <string name="chat_box_hint">Enter message</string>
     <string name="feedback_take_picture">Take picture</string>
     <string name="menu_home_sign_out">Sign out</string>
+    <string name="tab_all_users">All Users</string>
+    <string name="tab_groups">Groups</string>
+    <string name="menu_home_feedback_results">Feedback results</string>
 
     <string-array name="emotion_labels">
         <item>Fear</item>

@@ -8,6 +8,7 @@ import java.util.Map;
 public class EmojiMapper {
 
     private Map<LabelsType, String> emojiMap;
+    ;
     private static EmojiMapper emojiMapper;
 
     public static EmojiMapper getInstance() {
@@ -27,7 +28,6 @@ public class EmojiMapper {
         emojiMap.put(LabelsType.ANGRY, "\uD83D\uDE20");
         emojiMap.put(LabelsType.DISGUST, "\uD83E\uDD22");
     }
-
 
     public String getEmojiCode(LabelsType type) {
         return emojiMap.get(type);

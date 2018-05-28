@@ -1,9 +1,7 @@
-package com.example.szabi.fertestapp.view;
+package com.example.szabi.fertestapp.view.chatroom;
 
-import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.ViewUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,12 +22,10 @@ public class MessageListAdapter extends RecyclerView.Adapter {
     private static final int SENT_MESSAGE = 1;
     private static final int RECEIVED_MESSAGE = 2;
 
-    private Context context;
     private List<Message> messageList;
     private FirebaseUser currentUser;
 
-    public MessageListAdapter(Context context, List<Message> messageList, FirebaseUser currentUser) {
-        this.context = context;
+    MessageListAdapter(List<Message> messageList, FirebaseUser currentUser) {
         this.messageList = messageList;
         this.currentUser = currentUser;
     }

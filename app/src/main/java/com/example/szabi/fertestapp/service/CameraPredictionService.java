@@ -33,7 +33,7 @@ import com.example.szabi.fertestapp.model.face.Classifier;
 import com.example.szabi.fertestapp.model.face.TensorFlowClassifier;
 import com.example.szabi.fertestapp.utils.ClassificationUtils;
 import com.example.szabi.fertestapp.utils.ImageUtils;
-import com.example.szabi.fertestapp.view.HomeActivity;
+import com.example.szabi.fertestapp.view.chatroom.ChatActivity;
 import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
@@ -72,9 +72,9 @@ public class CameraPredictionService {
 
     private FaceDetector faceDetector;
 
-    private HomeActivity activity;
+    private ChatActivity activity;
 
-    public CameraPredictionService(HomeActivity activity) {
+    public CameraPredictionService(ChatActivity activity) {
         this.activity = activity;
     }
 

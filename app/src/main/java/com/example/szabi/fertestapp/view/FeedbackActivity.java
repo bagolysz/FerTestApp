@@ -61,11 +61,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.example.szabi.fertestapp.Configs.DB_TESTS;
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
 
 public class FeedbackActivity extends AppCompatActivity {
 
-    private static final String TESTS = "tests";
     private static final String TAG = "FeedbackActivity";
     private static final int MINIMUM_PREVIEW_SIZE = 640;
 
@@ -101,7 +101,11 @@ public class FeedbackActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feedback);
-        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Feedback");
+        }
 
         labelsMap = new HashMap<>();
         labelsMap.put(LabelsType.FEAR, 0);
@@ -113,7 +117,7 @@ public class FeedbackActivity extends AppCompatActivity {
         labelsMap.put(LabelsType.SURPRISED, 6);
         labelsMap.put(LabelsType.UNKNOWN, 7);
 
-        databaseReference = FirebaseDatabase.getInstance().getReference(TESTS);
+        databaseReference = FirebaseDatabase.getInstance().getReference(DB_TESTS);
 
         textureView = findViewById(R.id.feedback_preview);
         textureView.setSurfaceTextureListener(textureListener);

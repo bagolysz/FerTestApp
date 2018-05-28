@@ -27,8 +27,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.HomeActivity"
-            android:screenOrientation="portrait" />
+            android:name=".view.home.HomeActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/HomeTheme" />
         <activity
             android:name=".view.CameraTestActivity"
             android:screenOrientation="portrait" />
@@ -37,7 +38,9 @@
             android:name="com.google.android.gms.vision.DEPENDENCIES"
             android:value="face" />
 
-        <activity android:name=".view.FeedbackActivity"></activity>
+        <activity android:name=".view.FeedbackActivity" />
+        <activity android:name=".view.chatroom.ChatActivity" />
+        <activity android:name=".view.FeedbackResultsActivity"></activity>
     </application>
 
 </manifest>

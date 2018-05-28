@@ -15,6 +15,7 @@ import android.widget.Toast;
 import com.example.szabi.fertestapp.R;
 import com.example.szabi.fertestapp.model.messages.User;
 import com.example.szabi.fertestapp.utils.PreferencesManager;
+import com.example.szabi.fertestapp.view.home.HomeActivity;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -25,6 +26,10 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import static com.example.szabi.fertestapp.Configs.DB_USERS;
 
 public class LoginActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener {
 
@@ -96,12 +101,10 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
             GoogleSignInAccount account = result.getSignInAccount();
 
             if (account != null) {
-                User user = new User(account.getDisplayName(), account.getEmail());
-                PreferencesManager.getInstance(this).putUser(user);
                 fireBaseAuthWithGoogle(account);
             }
         } else {
-            Log.d("login", "sign out");
+            Log.d("LoginActivity", "sign out");
         }
     }
 
@@ -116,7 +119,21 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                     if (!task.isSuccessful()) {
                         showToast("Authentication failed.");
                     } else {
-                        openHomeScreen();
+                        if (acct.getId() != null) {
+                            User user = new User(
+                                    acct.getDisplayName(),
+                                    acct.getEmail(),
+                                    acct.getPhotoUrl() != null ? acct.getPhotoUrl().toString() : "");
+                            PreferencesManager.getInstance(this).putUser(user);
+
+                            FirebaseDatabase.getInstance().getReference(DB_USERS).child(acct.getId()).setValue(user);
+                            openHomeScreen();
+                        } else {
+                            Auth.GoogleSignInApi.signOut(googleApiClient).setResultCallback(status -> {
+                            });
+                            showToast("Oups, couldn't log in");
+                            finish();
+                        }
                     }
                 });
     }

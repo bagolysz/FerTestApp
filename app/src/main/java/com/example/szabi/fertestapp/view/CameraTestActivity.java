@@ -30,6 +30,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
+import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Button;
@@ -107,6 +108,9 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera_test);
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setTitle("Camera Test");
 
         predictionType = SINGLE_PREDICTION;
 
@@ -611,6 +615,16 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                super.onBackPressed();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
