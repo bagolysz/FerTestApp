@@ -19,7 +19,7 @@
         <activity
             android:name=".view.LoginActivity"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            android:theme="@style/StartupTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -34,13 +34,20 @@
             android:name=".view.CameraTestActivity"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".view.FeedbackActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".view.chatroom.ChatActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".view.FeedbackResultsActivity"
+            android:screenOrientation="portrait" />
+
         <meta-data
             android:name="com.google.android.gms.vision.DEPENDENCIES"
             android:value="face" />
 
-        <activity android:name=".view.FeedbackActivity" />
-        <activity android:name=".view.chatroom.ChatActivity" />
-        <activity android:name=".view.FeedbackResultsActivity"></activity>
     </application>
 
 </manifest>

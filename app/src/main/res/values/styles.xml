@@ -15,6 +15,10 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="StartupTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/login_emoji</item>
+    </style>
+
     <style name="TabButton" parent="">
         <item name="android:background">@color/colorPrimary</item>
         <item name="android:text">@android:color/white</item>

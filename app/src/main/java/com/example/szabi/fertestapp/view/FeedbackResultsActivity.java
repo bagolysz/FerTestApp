@@ -18,6 +18,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.example.szabi.fertestapp.Configs.DB_TESTS;
@@ -30,7 +31,6 @@ public class FeedbackResultsActivity extends AppCompatActivity {
 
 
     private DatabaseReference databaseReference;
-    private List<Feedback> feedbackList;
     private Map<LabelsType, Integer> intMap;
     private TextView[] trueLabels;
     private TextView[] predictedLabels;
@@ -44,11 +44,12 @@ public class FeedbackResultsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test_results);
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("Feedback results");
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Feedback results");
+        }
 
         initElements();
-        feedbackList = new ArrayList<>();
         elementCount = new int[CLASSES];
         confusionMatrix = new double[CLASSES][CLASSES];
 
@@ -57,8 +58,9 @@ public class FeedbackResultsActivity extends AppCompatActivity {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 Feedback feedback = dataSnapshot.getValue(Feedback.class);
-                feedbackList.add(feedback);
-                updateChart(feedback);
+                if (feedback != null) {
+                    updateChart(feedback);
+                }
             }
 
             @Override
@@ -101,7 +103,7 @@ public class FeedbackResultsActivity extends AppCompatActivity {
 
         for (int i = 0; i < CLASSES; i++) {
             for (int j = 0; j < CLASSES; j++) {
-                confusionMatrixItems[i][j].setText(String.valueOf(confusionMatrix[i][j]));
+                confusionMatrixItems[i][j].setText(String.format(Locale.ENGLISH, "%.2f", confusionMatrix[i][j] / elementCount[i]));
             }
         }
     }

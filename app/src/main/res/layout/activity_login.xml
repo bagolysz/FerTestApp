@@ -6,13 +6,7 @@
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    <ImageView
-        android:id="@+id/login_image"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:src="@drawable/login_emoji"
-        android:scaleType="centerCrop"
-        android:contentDescription="@string/app_name" />
+    
 
     <com.google.android.gms.common.SignInButton
         android:id="@+id/login_sign_in"
