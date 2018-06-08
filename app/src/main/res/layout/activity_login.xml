@@ -6,7 +6,7 @@
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    
+
 
     <com.google.android.gms.common.SignInButton
         android:id="@+id/login_sign_in"

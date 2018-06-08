@@ -35,6 +35,9 @@ public class FeedbackResultsActivity extends AppCompatActivity {
     private TextView[] trueLabels;
     private TextView[] predictedLabels;
     private TextView[][] confusionMatrixItems;
+    private TextView totalAccuracyTextView;
+    private int totalElements;
+    private int correctlyClassified;
 
     private double[][] confusionMatrix;
     private int[] elementCount;
@@ -52,6 +55,8 @@ public class FeedbackResultsActivity extends AppCompatActivity {
         initElements();
         elementCount = new int[CLASSES];
         confusionMatrix = new double[CLASSES][CLASSES];
+        totalElements = 0;
+        correctlyClassified = 0;
 
         databaseReference = FirebaseDatabase.getInstance().getReference(DB_TESTS);
         databaseReference.addChildEventListener(new ChildEventListener() {
@@ -98,6 +103,12 @@ public class FeedbackResultsActivity extends AppCompatActivity {
 
 
     private void updateChart(Feedback feedback) {
+        totalElements++;
+        if (feedback.getActual() == feedback.getPredicted()) {
+            correctlyClassified++;
+        }
+        totalAccuracyTextView.setText(String.format(Locale.ENGLISH, "%.2f%%", (correctlyClassified/((double)totalElements))*100));
+
         elementCount[intMap.get(feedback.getActual())]++;
         confusionMatrix[intMap.get(feedback.getActual())][intMap.get(feedback.getPredicted())]++;
 
@@ -121,6 +132,8 @@ public class FeedbackResultsActivity extends AppCompatActivity {
         trueLabels = new TextView[CLASSES];
         predictedLabels = new TextView[CLASSES];
         confusionMatrixItems = new TextView[CLASSES][CLASSES];
+
+        totalAccuracyTextView = findViewById(R.id.feedback_results_acc_value);
 
         trueLabels[0] = findViewById(R.id.true_label_0);
         trueLabels[1] = findViewById(R.id.true_label_1);

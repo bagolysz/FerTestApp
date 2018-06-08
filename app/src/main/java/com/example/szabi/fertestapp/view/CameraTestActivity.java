@@ -41,7 +41,7 @@ import android.widget.Toast;
 import com.example.szabi.fertestapp.R;
 import com.example.szabi.fertestapp.model.face.Classification;
 import com.example.szabi.fertestapp.model.face.Classifier;
-import com.example.szabi.fertestapp.model.face.TensorFlowClassifier;
+import com.example.szabi.fertestapp.service.TensorFlowClassifierService;
 import com.example.szabi.fertestapp.utils.ClassificationProcessingThread;
 import com.example.szabi.fertestapp.utils.ClassificationUtils;
 import com.example.szabi.fertestapp.utils.FixedSizeQueue;
@@ -521,7 +521,7 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
     // prepare the necessary resources for face detection and prediction
     private void prepareResources() {
         try {
-            classifier = new TensorFlowClassifier(getAssets());
+            classifier = new TensorFlowClassifierService(getAssets());
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
         }

@@ -30,7 +30,6 @@ import android.view.Surface;
 
 import com.example.szabi.fertestapp.model.face.Classification;
 import com.example.szabi.fertestapp.model.face.Classifier;
-import com.example.szabi.fertestapp.model.face.TensorFlowClassifier;
 import com.example.szabi.fertestapp.utils.ClassificationUtils;
 import com.example.szabi.fertestapp.utils.ImageUtils;
 import com.example.szabi.fertestapp.view.chatroom.ChatActivity;
@@ -285,8 +284,10 @@ public class CameraPredictionService {
         Y.getBuffer().get(yData, 0, ySize);
 
         for (int i = 0; i < ySize; i++) {
-            int y = yData[i] & 0xFF; //convert byte to int
-            rgbData[i] = 0xFF000000 | (y << 16) | (y << 8) | y; // set the same value for every channel to create grayScale image
+            //convert byte to int
+            int y = yData[i] & 0xFF;
+            // set the same value for every channel to create grayScale image
+            rgbData[i] = 0xFF000000 | (y << 16) | (y << 8) | y;
         }
 
         rgbFrameBitmap.setPixels(rgbData, 0, width, 0, 0, width, height);
@@ -298,7 +299,7 @@ public class CameraPredictionService {
     // prepare the necessary resources for face detection and prediction
     private void prepareResources() {
         try {
-            classifier = new TensorFlowClassifier(activity.getAssets());
+            classifier = new TensorFlowClassifierService(activity.getAssets());
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
         }

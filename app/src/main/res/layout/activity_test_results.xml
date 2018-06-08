@@ -7,17 +7,44 @@
     tools:context=".view.FeedbackResultsActivity">
 
     <TextView
-        android:id="@+id/feedback_results_title"
+        android:id="@+id/feedback_results_acc"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="@dimen/padding_standard"
-        android:text="Confusion matrix of feedback results:"
+        android:text="Total accuracy: "
         android:textColor="@color/primary_text"
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/feedback_results_acc_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_standard"
+        android:textColor="@color/primary_text"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="91.4%" />
+
+    <TextView
+        android:id="@+id/feedback_results_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingEnd="@dimen/padding_standard"
+        android:paddingStart="@dimen/padding_standard"
+        android:text="@string/confusion_matrix_of_feedback_results"
+        android:textColor="@color/primary_text"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/feedback_results_acc" />
 
     <LinearLayout
         android:id="@+id/true_labels"

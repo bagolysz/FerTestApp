@@ -12,6 +12,7 @@
     <string name="tab_all_users">All Users</string>
     <string name="tab_groups">Groups</string>
     <string name="menu_home_feedback_results">Feedback results</string>
+    <string name="confusion_matrix_of_feedback_results">Confusion matrix of feedback results:</string>
 
     <string-array name="emotion_labels">
         <item>Fear</item>

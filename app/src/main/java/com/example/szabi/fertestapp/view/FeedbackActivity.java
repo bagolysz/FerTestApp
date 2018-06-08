@@ -2,7 +2,6 @@ package com.example.szabi.fertestapp.view;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -34,14 +33,13 @@ import android.util.SparseArray;
 import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
-import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.szabi.fertestapp.R;
 import com.example.szabi.fertestapp.model.face.Classification;
 import com.example.szabi.fertestapp.model.face.Classifier;
 import com.example.szabi.fertestapp.model.face.LabelsType;
-import com.example.szabi.fertestapp.model.face.TensorFlowClassifier;
+import com.example.szabi.fertestapp.service.TensorFlowClassifierService;
 import com.example.szabi.fertestapp.model.messages.Feedback;
 import com.example.szabi.fertestapp.utils.ClassificationUtils;
 import com.example.szabi.fertestapp.utils.ImageUtils;
@@ -58,8 +56,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.example.szabi.fertestapp.Configs.DB_TESTS;
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
@@ -392,7 +388,7 @@ public class FeedbackActivity extends AppCompatActivity {
     // prepare the necessary resources for face detection and prediction
     private void prepareResources() {
         try {
-            classifier = new TensorFlowClassifier(getAssets());
+            classifier = new TensorFlowClassifierService(getAssets());
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
         }
