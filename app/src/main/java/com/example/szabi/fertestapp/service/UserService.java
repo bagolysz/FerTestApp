@@ -1,6 +1,7 @@
 package com.example.szabi.fertestapp.service;
 
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.widget.Toast;
 
 import com.example.szabi.fertestapp.model.messages.Conversation;
@@ -40,6 +41,7 @@ public class UserService {
     private DatabaseReference userRef;
     private DatabaseReference conversationRef;
     private DatabaseReference groupRef;
+    private DatabaseReference utilRef;
 
     public UserService(HomeActivity view) {
         this.view = view;
@@ -48,22 +50,22 @@ public class UserService {
         userRef = FirebaseDatabase.getInstance().getReference(DB_USERS);
         conversationRef = FirebaseDatabase.getInstance().getReference(DB_CONVERSATIONS);
         groupRef = FirebaseDatabase.getInstance().getReference(DB_GROUPS);
+        utilRef = FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_CONVERSATIONS);
 
         loadNumberOfConversations();
     }
 
     private void loadNumberOfConversations() {
-        DatabaseReference utilRef = FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_CONVERSATIONS);
         utilRef.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 Long val = dataSnapshot.getValue(Long.class);
                 if (val != null)
                     numberOfConversations = val;
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
         });
@@ -71,14 +73,14 @@ public class UserService {
         DatabaseReference groupRef = FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_GROUPS);
         groupRef.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 Long val = dataSnapshot.getValue(Long.class);
                 if (val != null)
                     numberOfGroups = val;
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
         });
@@ -106,7 +108,7 @@ public class UserService {
                 groupCounter = 0;
                 groupRef.addChildEventListener(new ChildEventListener() {
                     @Override
-                    public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    public void onChildAdded(@NonNull DataSnapshot dataSnapshot, String s) {
                         Conversation conversation = dataSnapshot.getValue(Conversation.class);
                         groupCounter++;
 
@@ -142,32 +144,49 @@ public class UserService {
                         } else {
                             //check if all conversations were tracked
                             if (groupCounter >= numberOfGroups) {
-                                //initiate new conversation
-                                Conversation conv = new Conversation(selectedUsers);
-                                groupRef.push().setValue(conv);
-                                FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_GROUPS).setValue(++numberOfGroups);
                                 groupRef.removeEventListener(this);
+
+                                //initiate new conversation
+                                FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_GROUPS).setValue(++numberOfGroups);
+
+                                DatabaseReference gRef = groupRef.push();
+                                gRef.setValue(new Conversation(selectedUsers));
+
+
+                                // open the conversation page
+                                StringBuilder builder = new StringBuilder("");
+                                int size = selectedUsers.size();
+                                for (int i = 0; i < size - 1; i++) {
+                                    builder.append(selectedUsers.get(i).getName()).append(", ");
+                                }
+                                builder.append(selectedUsers.get(size - 1).getName());
+
+                                Intent intent = new Intent(view, ChatActivity.class);
+                                intent.putExtra(DB_PATH_EXTRA, gRef.getKey());
+                                intent.putExtra(NAME_EXTRA, "group");
+                                intent.putExtra(GROUP_EXTRA, builder.toString());
+                                view.startActivity(intent);
                             }
                         }
                     }
 
                     @Override
-                    public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    public void onChildChanged(@NonNull DataSnapshot dataSnapshot, String s) {
 
                     }
 
                     @Override
-                    public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
 
                     }
 
                     @Override
-                    public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                    public void onChildMoved(@NonNull DataSnapshot dataSnapshot, String s) {
 
                     }
 
                     @Override
-                    public void onCancelled(DatabaseError databaseError) {
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
 
                     }
                 });
@@ -189,7 +208,7 @@ public class UserService {
             conversationCounter = 0;
             conversationRef.addChildEventListener(new ChildEventListener() {
                 @Override
-                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                public void onChildAdded(@NonNull DataSnapshot dataSnapshot, String s) {
                     Conversation conversation = dataSnapshot.getValue(Conversation.class);
                     conversationCounter++;
 
@@ -217,32 +236,40 @@ public class UserService {
                     } else {
                         //check if all conversations were tracked
                         if (conversationCounter >= numberOfConversations) {
-                            //initiate new conversation
-                            Conversation conv = new Conversation(impliedUsers);
-                            conversationRef.push().setValue(conv);
-                            FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_CONVERSATIONS).setValue(++numberOfConversations);
                             conversationRef.removeEventListener(this);
+
+                            //initiate new conversation
+                            FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_CONVERSATIONS).setValue(++numberOfConversations);
+
+                            DatabaseReference convRef = conversationRef.push();
+                            convRef.setValue(new Conversation(impliedUsers));
+
+                            //start new conversation
+                            Intent intent = new Intent(view, ChatActivity.class);
+                            intent.putExtra(DB_PATH_EXTRA, convRef.getKey());
+                            intent.putExtra(NAME_EXTRA, nextUser.getName());
+                            view.startActivity(intent);
                         }
                     }
                 }
 
                 @Override
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                public void onChildChanged(@NonNull DataSnapshot dataSnapshot, String s) {
 
                 }
 
                 @Override
-                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
 
                 }
 
                 @Override
-                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                public void onChildMoved(@NonNull DataSnapshot dataSnapshot, String s) {
 
                 }
 
                 @Override
-                public void onCancelled(DatabaseError databaseError) {
+                public void onCancelled(@NonNull DatabaseError databaseError) {
 
                 }
             });
@@ -250,7 +277,7 @@ public class UserService {
     }
 
     public void loadUsers() {
-        userRef.addChildEventListener(userEventListener);
+        userRef.orderByChild("name").addChildEventListener(userEventListener);
         groupRef.addChildEventListener(groupConversationEventListener);
     }
 
@@ -273,22 +300,22 @@ public class UserService {
         }
 
         @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, String s) {
 
         }
 
         @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
+        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
 
         }
 
         @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, String s) {
 
         }
 
         @Override
-        public void onCancelled(DatabaseError databaseError) {
+        public void onCancelled(@NonNull DatabaseError databaseError) {
 
         }
     };
@@ -305,22 +332,22 @@ public class UserService {
         }
 
         @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, String s) {
 
         }
 
         @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
+        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
 
         }
 
         @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, String s) {
 
         }
 
         @Override
-        public void onCancelled(DatabaseError databaseError) {
+        public void onCancelled(@NonNull DatabaseError databaseError) {
 
         }
     };

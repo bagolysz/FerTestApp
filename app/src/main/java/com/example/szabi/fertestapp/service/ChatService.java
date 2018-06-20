@@ -1,5 +1,7 @@
 package com.example.szabi.fertestapp.service;
 
+import android.support.annotation.NonNull;
+
 import com.example.szabi.fertestapp.model.messages.Message;
 import com.example.szabi.fertestapp.view.chatroom.ChatActivity;
 import com.google.firebase.auth.FirebaseAuth;
@@ -16,6 +18,8 @@ import static com.example.szabi.fertestapp.Configs.DB_CONVERSATION_MESSAGES;
 
 public class ChatService {
 
+    private static final int LOAD_LIMIT = 30;
+
     private ChatActivity view;
     private DatabaseReference databaseReference;
     private FirebaseUser firebaseUser;
@@ -27,7 +31,7 @@ public class ChatService {
                 .getReference(DB_CONVERSATION_MESSAGES).child(conversationId);
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
 
-        databaseReference.addChildEventListener(messageEventListener);
+        databaseReference.orderByChild("creationTime").limitToLast(LOAD_LIMIT).addChildEventListener(messageEventListener);
     }
 
     private ChildEventListener messageEventListener = new ChildEventListener() {
@@ -39,26 +43,26 @@ public class ChatService {
         }
 
         @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, String s) {
 
         }
 
         @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
+        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
 
         }
 
         @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, String s) {
 
         }
 
         @Override
-        public void onCancelled(DatabaseError databaseError) {
+        public void onCancelled(@NonNull DatabaseError databaseError) {
         }
     };
 
-    public void pushMessage(String text){
+    public void pushMessage(String text) {
         Message newMessage = new Message(firebaseUser.getDisplayName(),
                 text,
                 Objects.requireNonNull(firebaseUser.getPhotoUrl()).toString(),

@@ -45,6 +45,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         setContentView(R.layout.activity_login);
 
         checkPermissions();
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
 
         signIn = findViewById(R.id.login_sign_in);
         signIn.setOnClickListener(v -> signIn());
@@ -127,6 +128,8 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                             PreferencesManager.getInstance(this).putUser(user);
 
                             FirebaseDatabase.getInstance().getReference(DB_USERS).child(acct.getId()).setValue(user);
+                            Log.d("LOGIN", "Id: " + acct.getId());
+
                             openHomeScreen();
                         } else {
                             Auth.GoogleSignInApi.signOut(googleApiClient).setResultCallback(status -> {
