@@ -156,13 +156,11 @@ public class HomeActivity extends AppCompatActivity implements
     public void addUserToList(User user) {
         userList.add(user);
         userListAdapter.notifyDataSetChanged();
-        Log.d(TAG, "add user");
     }
 
     public void addConversationToList(Conversation conversation) {
         conversationList.add(conversation);
         conversationListAdapter.notifyDataSetChanged();
-        Log.d(TAG, "add conv");
     }
 
     @Override

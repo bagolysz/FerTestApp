@@ -1,12 +1,14 @@
 package com.example.szabi.fertestapp.view.chatroom;
 
 import android.content.Intent;
+import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
+import android.view.TextureView;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -20,29 +22,18 @@ import com.example.szabi.fertestapp.service.CameraPredictionService;
 import com.example.szabi.fertestapp.service.ChatService;
 import com.example.szabi.fertestapp.utils.EmojiMapper;
 import com.example.szabi.fertestapp.view.home.HomeActivity;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
-
-import static com.example.szabi.fertestapp.Configs.DB_CONVERSATIONS;
-import static com.example.szabi.fertestapp.Configs.DB_MESSAGES;
 
 public class ChatActivity extends AppCompatActivity {
-
-    private static final String TAG = "ChatActivity";
 
     private RecyclerView recyclerView;
     private EditText senderText;
     private ProgressBar progressBar;
     private boolean dataLoaded;
+    private TextureView previewWindow;
+    private boolean previewVisible;
 
     private MessageListAdapter messageListAdapter;
     private List<Message> messageList;
@@ -69,21 +60,27 @@ public class ChatActivity extends AppCompatActivity {
             getSupportActionBar().setSubtitle(users);
         }
 
-        cameraPredictionService = new CameraPredictionService(this);
-        chatService = new ChatService(this, conversationId);
-
-        dataLoaded = false;
+        previewVisible = false;
+        previewWindow = findViewById(R.id.preview_window);
+        previewWindow.setSurfaceTextureListener(textureListener);
 
         progressBar = findViewById(R.id.chat_progress_bar);
         recyclerView = findViewById(R.id.message_list_layout);
         senderText = findViewById(R.id.chat_box_edit_text);
         ImageView sendButton = findViewById(R.id.chat_box_send_button);
-        sendButton.setOnClickListener(sendButtonClickListener);
         ImageView quickPredictionButton = findViewById(R.id.chat_box_quick_predict);
-        quickPredictionButton.setOnClickListener(v -> cameraPredictionService.predictOne());
+
+
+        chatService = new ChatService(this, conversationId);
+
+        dataLoaded = false;
+        sendButton.setOnClickListener(sendButtonClickListener);
+        quickPredictionButton.setOnClickListener(v -> {
+            if (cameraPredictionService != null)
+                cameraPredictionService.predictOne();
+        });
 
         messageList = new LinkedList<>();
-
         messageListAdapter = new MessageListAdapter(messageList, chatService.getFirebaseUser());
         recyclerView.setAdapter(messageListAdapter);
 
@@ -91,6 +88,31 @@ public class ChatActivity extends AppCompatActivity {
         layoutManager.setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
     }
+
+    // when preview Window becomes available start the cameraPredictionService
+    TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+            cameraPredictionService = new CameraPredictionService(ChatActivity.this);
+            cameraPredictionService.startBackgroundThread();
+            cameraPredictionService.openCamera();
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+            return false;
+        }
+
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+
+        }
+    };
+
 
     View.OnClickListener sendButtonClickListener = new View.OnClickListener() {
         @Override
@@ -103,7 +125,7 @@ public class ChatActivity extends AppCompatActivity {
         }
     };
 
-    public void addMessageToList(Message message){
+    public void addMessageToList(Message message) {
         messageList.add(message);
         updateRecyclerViewElements();
     }
@@ -116,15 +138,35 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void onPredictionComplete(LabelsType labelsType) {
-        runOnUiThread(() -> senderText.setText(EmojiMapper.getInstance().getEmojiCode(labelsType)));
+        runOnUiThread(() -> senderText.append(EmojiMapper.getInstance().getEmojiCode(labelsType)));
+    }
+
+    public TextureView getPreviewWindow() {
+        return previewWindow;
     }
 
     // SYSTEM_CALLBACK SECTION
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_chat, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
                 super.onBackPressed();
+                break;
+
+            case R.id.menu_chat_preview:
+                previewVisible = !previewVisible;
+                previewWindow.setVisibility(previewVisible ? View.VISIBLE : View.INVISIBLE);
+                if (previewVisible) {
+                    item.setTitle(R.string.menu_chat_hide_preview);
+                } else {
+                    item.setTitle(R.string.menu_chat_show_preview);
+                }
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -133,14 +175,18 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        cameraPredictionService.startBackgroundThread();
-        cameraPredictionService.openCamera();
+        if (cameraPredictionService != null) {
+            cameraPredictionService.startBackgroundThread();
+            cameraPredictionService.openCamera();
+        }
     }
 
     @Override
     protected void onPause() {
-        cameraPredictionService.closeCamera();
-        cameraPredictionService.stopBackgroundThread();
+        if (cameraPredictionService != null) {
+            cameraPredictionService.closeCamera();
+            cameraPredictionService.stopBackgroundThread();
+        }
         super.onPause();
     }
 

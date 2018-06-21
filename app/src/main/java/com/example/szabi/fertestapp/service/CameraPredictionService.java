@@ -39,6 +39,7 @@ import com.google.android.gms.vision.face.FaceDetector;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -68,17 +69,23 @@ public class CameraPredictionService {
     private boolean computing = false;
     private Handler backgroundHandler;
     private HandlerThread backgroundThread;
+    private boolean isReady;
 
     private FaceDetector faceDetector;
 
     private ChatActivity activity;
 
     public CameraPredictionService(ChatActivity activity) {
+        this.isReady = false;
         this.activity = activity;
     }
 
     public void predictOne() {
-        capturePreview = true;
+        if (isReady) {
+            capturePreview = true;
+        } else {
+            activity.showToast("Service not ready yet!");
+        }
     }
 
 
@@ -147,6 +154,11 @@ public class CameraPredictionService {
         try {
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 
+            SurfaceTexture texture = activity.getPreviewWindow().getSurfaceTexture();
+            texture.setDefaultBufferSize(previewDimension.getWidth(), previewDimension.getHeight());
+            Surface previewSurface = new Surface(texture);
+            captureRequestBuilder.addTarget(previewSurface);
+
             imageReader = ImageReader.newInstance(
                     previewDimension.getWidth(),
                     previewDimension.getHeight(),
@@ -155,7 +167,7 @@ public class CameraPredictionService {
             Surface irSurface = imageReader.getSurface();
             captureRequestBuilder.addTarget(irSurface);
 
-            cameraDevice.createCaptureSession(Collections.singletonList(irSurface), new CameraCaptureSession.StateCallback() {
+            cameraDevice.createCaptureSession(Arrays.asList(previewSurface, irSurface), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     if (cameraDevice == null) {
@@ -168,6 +180,7 @@ public class CameraPredictionService {
                                 captureRequestBuilder.build(),
                                 null,
                                 backgroundHandler);
+                        isReady = true;
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
@@ -380,6 +393,10 @@ public class CameraPredictionService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean isReady() {
+        return isReady;
     }
     // END SECTION UTILS
 }
