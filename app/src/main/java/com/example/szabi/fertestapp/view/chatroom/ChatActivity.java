@@ -25,6 +25,8 @@ import com.example.szabi.fertestapp.view.home.HomeActivity;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -70,7 +72,6 @@ public class ChatActivity extends AppCompatActivity {
         ImageView sendButton = findViewById(R.id.chat_box_send_button);
         ImageView quickPredictionButton = findViewById(R.id.chat_box_quick_predict);
 
-
         chatService = new ChatService(this, conversationId);
 
         dataLoaded = false;
@@ -87,6 +88,23 @@ public class ChatActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
+
+        // set progress bar hide
+        new Timer().schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        runOnUiThread(() -> {
+                            if (!dataLoaded) {
+                                dataLoaded = true;
+                                showToast("No data to display.");
+                                progressBar.setVisibility(View.INVISIBLE);
+                            }
+                        });
+                    }
+                },
+                3000
+        );
     }
 
     // when preview Window becomes available start the cameraPredictionService
@@ -161,7 +179,8 @@ public class ChatActivity extends AppCompatActivity {
 
             case R.id.menu_chat_preview:
                 previewVisible = !previewVisible;
-                previewWindow.setVisibility(previewVisible ? View.VISIBLE : View.INVISIBLE);
+                //previewWindow.setVisibility(previewVisible ? View.VISIBLE : View.INVISIBLE);
+                previewWindow.setElevation(-previewWindow.getElevation());
                 if (previewVisible) {
                     item.setTitle(R.string.menu_chat_hide_preview);
                 } else {

@@ -23,12 +23,15 @@ import com.example.szabi.fertestapp.utils.PreferencesManager;
 import com.example.szabi.fertestapp.view.CameraTestActivity;
 import com.example.szabi.fertestapp.view.FeedbackActivity;
 import com.example.szabi.fertestapp.view.FeedbackResultsActivity;
+import com.example.szabi.fertestapp.view.chatroom.ChatActivity;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class HomeActivity extends AppCompatActivity implements
         UserListAdapter.ItemClickListener,
@@ -87,6 +90,23 @@ public class HomeActivity extends AppCompatActivity implements
         groupsButton.setOnClickListener(groupsButtonClickListener);
 
         userService.loadUsers();
+
+        // set progress bar hide
+        new Timer().schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        runOnUiThread(() -> {
+                            if (!dataLoaded) {
+                                dataLoaded = true;
+                                showToast("No data to display.");
+                                progressBar.setVisibility(View.INVISIBLE);
+                            }
+                        });
+                    }
+                },
+                3000
+        );
     }
 
     View.OnClickListener allUsersButtonClickListener = v -> {
@@ -161,6 +181,10 @@ public class HomeActivity extends AppCompatActivity implements
     public void addConversationToList(Conversation conversation) {
         conversationList.add(conversation);
         conversationListAdapter.notifyDataSetChanged();
+    }
+
+    public void showToast(String msg) {
+        runOnUiThread(() -> Toast.makeText(HomeActivity.this, msg, Toast.LENGTH_SHORT).show());
     }
 
     @Override

@@ -42,7 +42,8 @@
                 android:layout_weight="1"
                 android:background="?android:attr/selectableItemBackground"
                 android:text="@string/tab_all_users"
-                android:textColor="@color/white" />
+                android:textColor="@color/white"
+                android:theme="@style/Base.ThemeOverlay.AppCompat.Dark" />
 
             <Button
                 android:id="@+id/tab_button_groups"
@@ -52,7 +53,8 @@
                 android:layout_weight="1"
                 android:background="?android:attr/selectableItemBackground"
                 android:text="@string/tab_groups"
-                android:textColor="@color/trans_white" />
+                android:textColor="@color/trans_white"
+                android:theme="@style/Base.ThemeOverlay.AppCompat.Dark" />
         </LinearLayout>
     </android.support.design.widget.AppBarLayout>
 

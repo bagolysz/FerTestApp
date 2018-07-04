@@ -11,4 +11,6 @@
     <color name="trans_white">#AAFFFFFF</color>
     <color name="divider">#BDBDBD</color>
 
+    <color name="background">#FAFAFA</color>
+
 </resources>
