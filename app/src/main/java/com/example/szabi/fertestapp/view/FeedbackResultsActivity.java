@@ -4,6 +4,8 @@ import android.graphics.Typeface;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.szabi.fertestapp.R;
@@ -26,9 +28,7 @@ import static com.example.szabi.fertestapp.Configs.DB_TESTS;
 public class FeedbackResultsActivity extends AppCompatActivity {
 
     private static final int CLASSES = 7;
-
     private static final String[] labels = {"AF", "AN", "DI", "HA", "NE", "SA", "SU"};
-
 
     private DatabaseReference databaseReference;
     private Map<LabelsType, Integer> intMap;
@@ -36,6 +36,9 @@ public class FeedbackResultsActivity extends AppCompatActivity {
     private TextView[] predictedLabels;
     private TextView[][] confusionMatrixItems;
     private TextView totalAccuracyTextView;
+    private TextView totalElementsTextView;
+    private ProgressBar progressBar;
+    private boolean progressBarVisible;
     private int totalElements;
     private int correctlyClassified;
 
@@ -103,11 +106,23 @@ public class FeedbackResultsActivity extends AppCompatActivity {
 
 
     private void updateChart(Feedback feedback) {
+        checkProgressBar();
+
         totalElements++;
         if (feedback.getActual() == feedback.getPredicted()) {
             correctlyClassified++;
         }
-        totalAccuracyTextView.setText(String.format(Locale.ENGLISH, "%.2f%%", (correctlyClassified/((double)totalElements))*100));
+        totalAccuracyTextView.setText(String.format(
+                Locale.ENGLISH,
+                "%.2f%%",
+                (correctlyClassified / ((double) totalElements)) * 100
+        ));
+
+        totalElementsTextView.setText(String.format(
+                Locale.ENGLISH,
+                "(%d images)",
+                totalElements
+        ));
 
         elementCount[intMap.get(feedback.getActual())]++;
         confusionMatrix[intMap.get(feedback.getActual())][intMap.get(feedback.getPredicted())]++;
@@ -116,6 +131,14 @@ public class FeedbackResultsActivity extends AppCompatActivity {
             for (int j = 0; j < CLASSES; j++) {
                 confusionMatrixItems[i][j].setText(String.format(Locale.ENGLISH, "%.2f", confusionMatrix[i][j] / elementCount[i]));
             }
+        }
+    }
+
+    private void checkProgressBar() {
+        if (progressBarVisible) {
+            progressBarVisible = false;
+            runOnUiThread(() ->
+                    progressBar.setVisibility(View.GONE));
         }
     }
 
@@ -133,7 +156,10 @@ public class FeedbackResultsActivity extends AppCompatActivity {
         predictedLabels = new TextView[CLASSES];
         confusionMatrixItems = new TextView[CLASSES][CLASSES];
 
+        progressBarVisible = true;
+        progressBar = findViewById(R.id.feedback_results_progress_bar);
         totalAccuracyTextView = findViewById(R.id.feedback_results_acc_value);
+        totalElementsTextView = findViewById(R.id.feedback_results_total_elements);
 
         trueLabels[0] = findViewById(R.id.true_label_0);
         trueLabels[1] = findViewById(R.id.true_label_1);

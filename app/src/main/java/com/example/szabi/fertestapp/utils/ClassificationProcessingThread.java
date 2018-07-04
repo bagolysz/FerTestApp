@@ -45,9 +45,8 @@ public class ClassificationProcessingThread extends Thread {
             maxValue /= queueSize;
 
             listener.notifyPredictionReady("Max label: " + maxLabel + " with " + maxValue);
-            //Log.d("PRED", "Max label: " + maxLabel + " with " + maxValue);
             try {
-                Thread.sleep(1000);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

@@ -39,7 +39,7 @@
                 android:id="@+id/btn_start_predict"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start predict" />
+                android:text="Start" />
         </LinearLayout>
 
         <TextView

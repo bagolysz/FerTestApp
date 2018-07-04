@@ -33,6 +33,7 @@ import android.util.SparseArray;
 import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -65,7 +66,7 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
     private static final String TAG = "FerTestAppMainActivity";
     private static final int REQUEST_CAMERA_PERMISSION = 200;
     private static final int MINIMUM_PREVIEW_SIZE = 640;
-    private static final int QUEUE_SIZE = 6;
+    private static final int QUEUE_SIZE = 5;
     private static final int SINGLE_PREDICTION = 1;
     private static final int CONTINUOUS_PREDICTION = 2;
 
@@ -123,11 +124,6 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
         btnPredict.setOnClickListener(v -> {
             capturePreview = true;
             btnPredict.setClickable(false);
-
-            // use these lines, when loading images from drawables to test on well known images
-            /*capturedImage.setImageResource(imageArray[index]);
-            predictImage(imageArray[index]);
-            index = (index + 1) % (imageArray.length);*/
         });
 
         btnSelectPredictionType = findViewById(R.id.btn_start_predict);
@@ -141,13 +137,19 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                     classificationProcessingThread.start();
 
                     btnPredict.setClickable(false);
+                    btnSelectPredictionType.setText("STOP");
+                    capturedImage.setImageBitmap(null);
                     showToast("Switched to continuous mode");
                     break;
                 case CONTINUOUS_PREDICTION:
                     // stop threads and switch to single prediction mode
                     predictionType = SINGLE_PREDICTION;
+
                     classificationProcessingThread.stopMe();
+
                     btnPredict.setClickable(true);
+                    btnSelectPredictionType.setText("START");
+                    capturedImage.setImageBitmap(croppedBitmap);
                     showToast("Switched to single mode");
                     break;
             }
@@ -446,7 +448,8 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                             // print results
                             runOnUiThread(() -> {
                                 capturedImage.setImageBitmap(croppedBitmap);
-                                predictionLabel.setText(ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
+                                predictionLabel.setText(
+                                        ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
                                 btnPredict.setClickable(true);
                             });
 
@@ -475,11 +478,8 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                         //interested only in the first face
                         Face thisFace = faces.valueAt(0);
                         cropFace(thisFace);
-                        //cropFeatures(thisFace);
-
-                        final long startTime = System.currentTimeMillis();
                         final List<Classification> results = classifier.classify(croppedBitmap);
-                        double endTime = (System.currentTimeMillis() - startTime) / 1000.0;
+
                         fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
                     } else {
                         Log.d(TAG, "No face detected");
@@ -487,7 +487,6 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                 } else {
                     Log.e(TAG, "Face detector is not operational");
                 }
-
                 break;
         }
 
