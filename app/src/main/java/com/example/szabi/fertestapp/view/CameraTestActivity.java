@@ -33,7 +33,6 @@ import android.util.SparseArray;
 import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -43,7 +42,7 @@ import com.example.szabi.fertestapp.R;
 import com.example.szabi.fertestapp.model.face.Classification;
 import com.example.szabi.fertestapp.model.face.Classifier;
 import com.example.szabi.fertestapp.service.TensorFlowClassifierService;
-import com.example.szabi.fertestapp.utils.ClassificationProcessingThread;
+import com.example.szabi.fertestapp.service.ClassificationProcessingThread;
 import com.example.szabi.fertestapp.utils.ClassificationUtils;
 import com.example.szabi.fertestapp.utils.FixedSizeQueue;
 import com.example.szabi.fertestapp.utils.ImageUtils;
@@ -57,7 +56,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
+import static com.example.szabi.fertestapp.Configs.CONFIDENCE_THRESHOLD;
 import static com.example.szabi.fertestapp.Configs.INPUT_HEIGHT;
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
 import static com.example.szabi.fertestapp.Configs.INPUT_WIDTH;
@@ -445,11 +446,16 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
                             }
                             Log.d("RECOG", clazz.toString());
 
+                            Classification max = ClassificationUtils.argMax(results);
+                            if (max.getConfidence() < CONFIDENCE_THRESHOLD) {
+                                max.update("unknown");
+                            }
+
                             // print results
                             runOnUiThread(() -> {
                                 capturedImage.setImageBitmap(croppedBitmap);
-                                predictionLabel.setText(
-                                        ClassificationUtils.argMax(results).toString() + " in " + endTime + " s");
+                                predictionLabel.setText(String.format(Locale.ENGLISH,
+                                        "%s in %.3f s", max.toString(), endTime));
                                 btnPredict.setClickable(true);
                             });
 
@@ -482,6 +488,7 @@ public class CameraTestActivity extends AppCompatActivity implements Notificatio
 
                         fixedSizeQueue.addElement(ClassificationUtils.argMax(results));
                     } else {
+                        fixedSizeQueue.addElement(new Classification("noFace", 1));
                         Log.d(TAG, "No face detected");
                     }
                 } else {

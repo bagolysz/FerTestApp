@@ -2,6 +2,7 @@ package com.example.szabi.fertestapp.service;
 
 import android.content.Intent;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.example.szabi.fertestapp.model.messages.Conversation;
@@ -121,39 +122,12 @@ public class UserService {
                                     }
                                 }
                             }
-                        }
 
-                        if (c == selectedUsers.size()) {
-                            //conversation found
-                            //Toast.makeText(view, dataSnapshot.getRef().getKey(), Toast.LENGTH_SHORT).show();
-                            groupRef.removeEventListener(this);
-
-                            StringBuilder builder = new StringBuilder("");
-                            int size = selectedUsers.size();
-                            for (int i = 0; i < size - 1; i++) {
-                                builder.append(selectedUsers.get(i).getName()).append(", ");
-                            }
-                            builder.append(selectedUsers.get(size - 1).getName());
-
-                            Intent intent = new Intent(view, ChatActivity.class);
-                            intent.putExtra(DB_PATH_EXTRA, dataSnapshot.getRef().getKey());
-                            intent.putExtra(NAME_EXTRA, "group");
-                            intent.putExtra(GROUP_EXTRA, builder.toString());
-                            view.startActivity(intent);
-
-                        } else {
-                            //check if all conversations were tracked
-                            if (groupCounter >= numberOfGroups) {
+                            if (c == conversation.users.size() && c == selectedUsers.size()) {
+                                //conversation found
+                                //Toast.makeText(view, dataSnapshot.getRef().getKey(), Toast.LENGTH_SHORT).show();
                                 groupRef.removeEventListener(this);
 
-                                //initiate new conversation
-                                FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_GROUPS).setValue(++numberOfGroups);
-
-                                DatabaseReference gRef = groupRef.push();
-                                gRef.setValue(new Conversation(selectedUsers));
-
-
-                                // open the conversation page
                                 StringBuilder builder = new StringBuilder("");
                                 int size = selectedUsers.size();
                                 for (int i = 0; i < size - 1; i++) {
@@ -162,11 +136,40 @@ public class UserService {
                                 builder.append(selectedUsers.get(size - 1).getName());
 
                                 Intent intent = new Intent(view, ChatActivity.class);
-                                intent.putExtra(DB_PATH_EXTRA, gRef.getKey());
+                                intent.putExtra(DB_PATH_EXTRA, dataSnapshot.getRef().getKey());
                                 intent.putExtra(NAME_EXTRA, "group");
                                 intent.putExtra(GROUP_EXTRA, builder.toString());
                                 view.startActivity(intent);
+
+                            } else {
+                                //check if all conversations were tracked
+                                if (groupCounter >= numberOfGroups) {
+                                    groupRef.removeEventListener(this);
+
+                                    //initiate new conversation
+                                    FirebaseDatabase.getInstance().getReference(DB_UTILS).child(DB_NUMBER_OF_GROUPS).setValue(++numberOfGroups);
+
+                                    DatabaseReference gRef = groupRef.push();
+                                    gRef.setValue(new Conversation(selectedUsers));
+
+
+                                    // open the conversation page
+                                    StringBuilder builder = new StringBuilder("");
+                                    int size = selectedUsers.size();
+                                    for (int i = 0; i < size - 1; i++) {
+                                        builder.append(selectedUsers.get(i).getName()).append(", ");
+                                    }
+                                    builder.append(selectedUsers.get(size - 1).getName());
+
+                                    Intent intent = new Intent(view, ChatActivity.class);
+                                    intent.putExtra(DB_PATH_EXTRA, gRef.getKey());
+                                    intent.putExtra(NAME_EXTRA, "group");
+                                    intent.putExtra(GROUP_EXTRA, builder.toString());
+                                    view.startActivity(intent);
+                                }
                             }
+                        } else {
+                            Log.d("USERSERVICE", "conversation not found");
                         }
                     }
 

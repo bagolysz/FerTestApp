@@ -11,10 +11,14 @@ public interface Configs {
     int INPUT_WIDTH = 160; //224
     int INPUT_HEIGHT = 160; //224
 
+    double CONFIDENCE_THRESHOLD = 0.5;
+    int NO_FACE_MAX = 2;
+
     // database management
     //String DB_MESSAGES = "messages";
     String DB_TESTS = "tests";
-    String DB_USERS = "users";    String DB_CONVERSATIONS = "conversations";
+    String DB_USERS = "users";
+    String DB_CONVERSATIONS = "conversations";
     String DB_CONVERSATION_MESSAGES = "conversationMessages";
     String DB_GROUPS = "conversationGroups";
     String DB_UTILS = "utils";

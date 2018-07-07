@@ -19,6 +19,10 @@ public class Classification {
         this.confidence = confidence;
     }
 
+    public void update(String label) {
+        this.label = label;
+    }
+
     public void update(Classification c) {
         this.label = c.getLabel();
         this.confidence = c.getConfidence();

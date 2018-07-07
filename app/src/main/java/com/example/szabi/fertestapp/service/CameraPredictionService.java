@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.example.szabi.fertestapp.Configs.CONFIDENCE_THRESHOLD;
 import static com.example.szabi.fertestapp.Configs.INPUT_SIZE;
 
 public class CameraPredictionService {
@@ -238,8 +239,13 @@ public class CameraPredictionService {
 
                     capturePreview = false;
                     Classification max = ClassificationUtils.argMax(results);
-                    activity.showToast(max.toString() + " in " + endTime + " s");
-                    activity.onPredictionComplete(ClassificationUtils.toLabel(max));
+
+                    if (max.getConfidence() >= CONFIDENCE_THRESHOLD) {
+                        activity.showToast(max.toString() + " in " + endTime + " s");
+                        activity.onPredictionComplete(ClassificationUtils.toLabel(max));
+                    } else {
+                        activity.showToast("unknown");
+                    }
                 } else {
                     activity.showToast("No face detected.");
                     capturePreview = false;
